@@ -374,10 +374,10 @@ stck = copy(forest)
 
   <span class=hljs-comment ># LLL-reduce lattice basis</span>
   reduced_basis = open(<span class=hljs-string >`fplll`</span>; read = <span class=hljs-literal >true</span>, write = <span class=hljs-literal >true</span>) <span class=hljs-keyword >do</span> fplll
-    write(fplll, to_fplll(transpose(homogenous_sol))) <span class=hljs-comment ># Tranpose becuase fplll expects row vectors</span>
+    write(fplll, to_fplll(transpose(homogenous_sol))) <span class=hljs-comment ># Transpose because fplll expects row vectors</span>
     reduced_basis = read(fplll, <span class=hljs-built_in >String</span>)
     
-    <span class=hljs-comment ># First row is all zeros since we have nvectors &gt; ndims. Reemove it.</span>
+    <span class=hljs-comment ># First row is all zeros since we have nvectors &gt; ndims. Remove it.</span>
     reduced_basis = <span class=hljs-string >&quot;[&quot;</span> * join(split(reduced_basis, <span class=hljs-string >&quot;\n&quot;</span>)[(<span class=hljs-number >2</span>+redundancy):<span class=hljs-keyword >end</span>]) 
   <span class=hljs-keyword >end</span>
 
@@ -399,7 +399,7 @@ stck = copy(forest)
   <span class=hljs-keyword >end</span>
 
   <span class=hljs-comment ># We could still be off by a factor of p because of the unreduced addition of s in Poly1305.</span>
-  <span class=hljs-comment ># If that&#x27;s the case, we just generate a new splitting ciphertext by increasing the redundancy factor.</span>
+  <span class=hljs-comment ># If that&#x27;s the case, we&#x27;ll just generate a new splitting ciphertext by increasing the redundancy factor.</span>
   message = aead_chacha20_poly1305_message_construct(ciphertext, AAD)
   tag = unique(poly1305(key, message) <span class=hljs-keyword >for</span> key <span class=hljs-keyword >in</span> poly1305_keys)
   <span class=hljs-keyword >if</span> length(tag) &gt; <span class=hljs-number >1</span>
