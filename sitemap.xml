@@ -2,13 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
 <url>
-    <loc>ctf/index.html</loc>
+    <loc>index.html</loc>
     <lastmod>2024-02-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
 </url>
 <url>
-    <loc>index.html</loc>
+    <loc>about/index.html</loc>
     <lastmod>2024-02-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
@@ -20,7 +20,7 @@
     <priority>0.5</priority>
 </url>
 <url>
-    <loc>about/index.html</loc>
+    <loc>ctf/index.html</loc>
     <lastmod>2024-02-11</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
