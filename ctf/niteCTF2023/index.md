@@ -1,10 +1,11 @@
 # niteCTF 2023
-## cha-cha-cha
+@@subtitle
+cha-cha-cha
+@@
 
 @def mintoclevel=3
 \toc
 
----
 ### Introduction
 We are provided with a decryption oracle for ChaCha20Poly1305, and tasked
 with determining the oracle's key derivation secret in order to retrieve the flag.
@@ -105,7 +106,7 @@ algorithm, we see that the validity of a ciphertext depends only on the validity
 of the Poly1305 tag $T$ relative to the authentication inputs $(AD, K, N, C)$
 of which we control all but $K$.
 
-@@splash_image
+@@invert_image
 ![ChaCha20Poly1305](https://upload.wikimedia.org/wikipedia/commons/5/55/ChaCha20-Poly1305_Encryption.svg)
 @@
 
@@ -174,11 +175,11 @@ Assuming linear independence of the equations, this bounds $m \geq n - 1$ in ord
 \end{equation*}
 
 ### Satisfying padding requirements
-This is where algebraic sabotage comes into play. In order for $\mathbf{p} +
-\sum_{k = 1}^{m - n - 1}t_k\mathbf{v}_k$ to form a valid splitting ciphertext,
-each coordinate must lie in the image of the Poly1305 $\mathrm{pad}(\cdot)$
-operation. For 16-byte message blocks, this is equivalent to requiring that each $\mathrm{pad}(m_i)$ be congruent to $a_i$ modulo $p$ for some $a_i$ in the interval
-$\left[2^{128}, 2^{129}\right]$.
+In order for $\mathbf{p} + \sum_{k = 1}^{m - n - 1}t_k\mathbf{v}_k$ to form a
+valid splitting ciphertext, each coordinate must lie in the image of the
+Poly1305 $\mathrm{pad}(\cdot)$ operation. For 16-byte message blocks, this is
+equivalent to requiring that each $\mathrm{pad}(m_i)$ be congruent to $a_i$
+modulo $p$ for some $a_i$ in the interval $\left[2^{128}, 2^{129}\right]$.
 
 If coordinates were uniformly distributed, the probability of any one coordinate
 lying in the required interval is approximately $1/4$, so the probability of the

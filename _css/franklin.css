@@ -108,13 +108,13 @@ html {
 ================================================================== */
 
 .franklin-content h1 {
-  font-size: 24px;
+  /* font-size: 24px; */
 }
 .franklin-content h2 {
-  font-size: 22px;
+  /* font-size: 22px; */
 }
 .franklin-content h3 {
-  font-size: 20px;
+  /* font-size: 20px; */
 }
 
 .franklin-content h1,
@@ -128,49 +128,55 @@ h6 {
 
 .franklin-content h1 {
   padding-bottom: 0.5em;
-  border-bottom: 3px double lightgrey;
-  margin-top: 1.5em;
-  margin-bottom: 1em;
+  /* border-bottom: 3px double lightgrey; */
+  margin-top: 2em;
+  margin-bottom: 0.5em;
 }
 
 .franklin-content h2 {
   padding-bottom: 0.3em;
-  border-bottom: 1px solid lightgrey;
+  /* border-bottom: 1px solid lightgrey; */
   margin-top: 2em;
   margin-bottom: 1em;
 }
 
 .franklin-content h1 a {
+  background: unset;
   color: inherit;
 }
 .franklin-content h1 a:hover {
   text-decoration: none;
 }
 .franklin-content h2 a {
+  background: unset;
   color: inherit;
 }
 .franklin-content h2 a:hover {
   text-decoration: none;
 }
 .franklin-content h3 a {
+  background: unset;
   color: inherit;
 }
 .franklin-content h3 a:hover {
   text-decoration: none;
 }
 .franklin-content h4 a {
+  background: unset;
   color: inherit;
 }
 .franklin-content h4 a:hover {
   text-decoration: none;
 }
 .franklin-content h5 a {
+  background: unset;
   color: inherit;
 }
 .franklin-content h5 a:hover {
   text-decoration: none;
 }
 .franklin-content h6 a {
+  background: unset;
   color: inherit;
 }
 .franklin-content h6 a:hover {
@@ -275,9 +281,9 @@ td {
 ================================================================== */
 
 .franklin-content img {
-  width: 70%;
+  width: 100%;
   text-align: center;
-  padding-left: 10%;
+  padding-left: 0%;
 }
 
 .franklin-content .img-small img {

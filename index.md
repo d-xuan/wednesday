@@ -1,6 +1,6 @@
-@def title = "wednesday acapella"
+@def title = "wednesday"
 
-# wednesday acapella
+# wednesday
 
 @@splash_image
 ![Liquid Sky (1982)](./assets/liquid_sky.jpg)

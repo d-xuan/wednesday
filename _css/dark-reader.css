@@ -23,19 +23,19 @@ _______|_______/__/ ____ \__\__|___\__\__|___\__\____
 
 /* User-Agent Style */
 html {
-  background-color: #181a1b !important;
+  background-color: #151515 !important;
 }
 html {
   color-scheme: dark !important;
 }
 html,
 body {
-  background-color: #181a1b;
+  background-color: #151515;
 }
 html,
 body {
   border-color: #736b5e;
-  color: #e8e6e3;
+  color: #ddd;
 }
 a {
   color: #3391ff;
@@ -50,7 +50,7 @@ input:-webkit-autofill,
 textarea:-webkit-autofill,
 select:-webkit-autofill {
   background-color: #404400 !important;
-  color: #e8e6e3 !important;
+  color: #ddd !important;
 }
 ::-webkit-scrollbar {
   background-color: #202324;
@@ -66,15 +66,15 @@ select:-webkit-autofill {
   background-color: #484e51;
 }
 ::-webkit-scrollbar-corner {
-  background-color: #181a1b;
+  background-color: #151515;
 }
 ::selection {
   background-color: #004daa !important;
-  color: #e8e6e3 !important;
+  color: #ddd !important;
 }
 ::-moz-selection {
   background-color: #004daa !important;
-  color: #e8e6e3 !important;
+  color: #ddd !important;
 }
 
 /* Invert Style */
@@ -88,12 +88,12 @@ select:-webkit-autofill {
   --darkreader-neutral-background: #131516;
   --darkreader-neutral-text: #d8d4cf;
   --darkreader-selection-background: #004daa;
-  --darkreader-selection-text: #e8e6e3;
+  --darkreader-selection-text: #ddd;
 }
 
 /* Modified CSS */
 :root {
-  --darkreader-bg--block-background: #202325;
+  --darkreader-bg--block-background: #151515;
   --darkreader-bg--output-background: #1b1d1e;
   --small: 14px;
   --normal: 19px;
@@ -219,23 +219,7 @@ a:visited {
 }
 a:link {
   text-decoration-color: initial;
-  background-image: linear-gradient(rgb(41, 41, 0), rgb(41, 41, 0)),
-    linear-gradient(rgb(41, 41, 0), rgb(41, 41, 0)),
-    linear-gradient(rgb(38, 42, 43), rgb(38, 42, 43));
   background-color: initial;
-  text-shadow:
-    rgb(41, 41, 0) 0.03em 0px,
-    rgb(41, 41, 0) -0.03em 0px,
-    rgb(41, 41, 0) 0px 0.03em,
-    rgb(41, 41, 0) 0px -0.03em,
-    rgb(41, 41, 0) 0.06em 0px,
-    rgb(41, 41, 0) -0.06em 0px,
-    rgb(41, 41, 0) 0.09em 0px,
-    rgb(41, 41, 0) -0.09em 0px,
-    rgb(41, 41, 0) 0.12em 0px,
-    rgb(41, 41, 0) -0.12em 0px,
-    rgb(41, 41, 0) 0.15em 0px,
-    rgb(41, 41, 0) -0.15em 0px;
 }
 a:link::selection {
   text-shadow:

@@ -29,6 +29,7 @@
   text-decoration: none;
   position: relative;
   padding: 10px 10px;
+  background: unset;
 }
 
 #menu ul li a::after {
@@ -81,7 +82,7 @@
 
 @media (min-width: 940px) {
   #menu {
-    margin-top: 100px;
+    margin-top: 13em;
     float: left;
     width: 100px;
     text-align: right;
@@ -100,4 +101,9 @@
 .splash_image img {
   width: 100%;
   padding-left: 0%;
+}
+
+.invert_image img {
+  --webkit-filter: invert(1);
+  filter: invert(1);
 }
