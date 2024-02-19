@@ -3,7 +3,7 @@
 # wednesday
 
 @@splash_image
-![Liquid Sky (1982)](./assets/liquid_sky.jpg)
+![Manchester by the Sea](./assets/Manchester_By_The_Sea_018.jpg)
 @@
 
 > A different image came to me a few weeks ago. \\\\
