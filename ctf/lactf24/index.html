@@ -1,0 +1,1274 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/katex/katex.min.css"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=stylesheet  href="/wednesday/css/dark-reader.css"> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>LA CTF 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> </ul> </div> <div id=main > <div class=franklin-content ><h1 id=la_ctf_2024 ><a href="#la_ctf_2024" class=header-anchor >LA CTF 2024</a></h1> <p>Below are writeups for all the cryptography challenges. Big shoutouts to <a href="https://pbr.acmcyber.com/">PBR</a> at UCLA for hosting this incredible event.</p> <div class=franklin-toc ><ol><li><a href="#valentines-day">valentines-day</a><li><a href="#selamat_pagi">selamat pagi</a><li><a href="#very-hot">very-hot</a><li><a href="#holyt">hOlyT</a><li><a href="#prove_it">prove it&#33;</a><li><a href="#budget_bag">budget bag</a><li><a href="#pprngc">pprngc</a><li><a href="#shuffler">shuffler</a><li><a href="#any-ssg">any&#37;-ssg</a></ol></div> <h2 id=valentines-day ><a href="#valentines-day" class=header-anchor >valentines-day</a></h2> <p>Starting off with the classical ciphers, we have a vigenere cipher encrypted with a very long key of known length.</p> <pre><code class=language-plaintext >Br olzy Jnyetbdrc&#39;g xun, V avrkkr gb sssp km frja sbv kvflsffoi Jnuc Sathrg. Wkmk gytjzyakz mj jsqvcmtoh rc bkd. Canjc kns puadlctus&#33;
+
+L xyw fmoxztu va tai szt, dbiazb yiff mt Zzhbo 1178 gyfyjhuzw vhtkqfy sniu eih vbsel edih tpcvftz, xcie ysnecsmge hbucqtu qt wcorr crzhg-olhm srr gkh gdsjxqh gnxxl rtr guez jewr klkkgak dx uuka nnv hmvwbj gmv glz fvyh, jueg eww oq i wuqglh Z lrigjsss ynch xun esivmpwf: &quot;oof hvrb frtbrq it Kcmlo?&quot;
+
+C ltzihfvxsq ghp abqs qrfzf glvx de HN bnty gocr gr:
+
+Eiaj zek rvocf vnriiu ob Puiza. Xegjy webrvbvrj. Frat s vgxhidm kepldrv gbq phxgv.
+
+Ehlb&#39;w wuhu C ixyzchlr, ilc srez foq e wxzb sdz nrbrb. Eej W und siieesx nd pvvgb zvr pooi. B fox wc nrax v pedgei aex phvqe. Hqdru pc tvvtrv, C zyoxvxsq ghq wyvbg yzgmex KEKN&#61;/ife/lgcyr/qg/ejl:&#36;TNXC, eej hurn mlp qowtswvqn:
+
+wrm ~cuamyh/umlofikjayrvplzcwm.gdg | pzwj
+ropgf&#123;qvjal_dfuxaxzbk_gbq_jeci_hdt_nr_hdr_eexij&#125;
+
+Yiqqeefl, cywfylnt zlrv finqvyq sqii sm oncw.
+
+Apxcf ipv yah v lrrt ubujs, rnsm kbb jvrvpce anaazio eo ecvn bq abv TA wh bos aiahovr qojp.
+
+L vhclachyyc mirj hueoaoc xfs uhhjim ove, gybwwc vmdslbc qbai xyk fvthk uasnslf rngr pc dsez, rvcpo vrjcse fhqed afsh K ycnv Zkxkfg fcjeys Q-g Vushrro Ayu Wf Phxeetnr Wjf Gkl Uelusl Slm xr fwm rncwti hfhkk lcamhi. D ary wa gozig wfcwe. Humqiiobt, V lzsdcr xrkj ng xci wxcag ow nue tzufvrbrp, efh ntrqbrh vw Vmuret elyajm nwilrh cmj nsnq uftgr wh opaorh jrku ar. &quot;V wbpw akttp ybx,&quot; oy vvfcyl. P kpw dfidrw or qb wlac sbq ibygh ftzl jazkc eq vy mjzqjrvj vvf seegb &#91;PCUHDCYEXI FL HUR IENRRESN&#93;.
+
+V eorowiv jihk as fivx, aaacvns ofip gyxvpnp prcaqxl slubkbhv&#39; ecwxw vru ydevnmmyr ua ble fwhcil ybx wbh dj Dfurm rbrs wal Kgmfg us Wxmvtqrf. Bab D gmifx hrrni knog Rgrikr kuv qhbfi jr de hnvl. Yy fudaiahd n grdwr thnwyf sa lzsgryf iidl aofnj rb tolikoq_prwark&#40;&#41;, obg ufil tmstksqrd ms nsadm qe nv P lrg rcqiyrh xfs gegqgam enptvabt. O uenxzrm teahjzh rvy xdbv os vthre mlxaqqc, zvaa brz sw zvr Rgxyet kvlrddf vksmxvw &quot;avgbh v-b DGHUFCU DYSP.&quot; W ntzcq skieobt ghw dmuf, pxu gx fljykkr ng mx: &quot;Tpcmtawibq kyebcr.&quot; C ahws &quot;vk -t xsba&quot; olh utu qflc gnr qvxyyqv ouotymlu.
+
+C lpa hzwgkfngewc ypcg wva Rtkzvk izbaej, vht jcia iohqg qqwved cog sa fikogu, bqckyqs C&#39;o r AF qvnfx oaq I kir gh ab ecwx egp ugm. Fhdwiywy, T aew bql iw Xeuyza&#39;g rpmbyw edb bszg apw zoyrjet. M hawpxle wkilsx nwr hjsi tskg tz qx ybx vhacciy meywqr, biyntywht d svjk sx vvegsz. Oyo xykb V gudnoh kmmgcd nvjyej oaq surcgasg.
+
+&quot;Xcppshi ku al bfymnp.&quot; Eroirg hjbfxb. &quot;Mic&#39;cs bebs cx fx tyv. L vhv lwzy zueo cfa vnie g ojsb uluhc sa xyk thadlqxlhuog ks pshqftzl-hsvx fowhqnue grrpk eew cbpvvjrdkbgf, pmrdmaifcijl skie-ychecw tmuzg ojiiyc os sk ifrd br fappz-hiilzcfg acgxbhtv qqcials asxkzmk.&quot;
+
+A kuoztzvvj oaq bgkfib whnd glz gfxbre oq lbq cziwyr.
+
+&quot;Lsp qre pr joexrrzba urw lrx kgx yxps. C pvzekkr n fyybypgq fkei oioavkb zntzsao 6229 obg nw ssjdgv nser ig Iyriymirvqn PZ. B uohb fcj xm yhsj cvyx L pvv&#39;l ziez lsp. M ngg zrrktt xcgncct cjy.&quot;
+
+Z miyceo egb ziryaq vros yog rlej. &quot;Lraczs?&quot;
+
+&quot;Lhs...&quot; Rjjijx ixnzcrh, &quot;Dr wgqg, V bdoekfh sql frvz mezc zl oxfgis hr bqo lsp sek jrey bqazreirt dxlmkbmb.&quot;
+
+&quot;Qphh?&quot; X wrinxrasb.
+
+Ijzlzl dsntrh wetq wa uiy kcegf, mgxymik. &quot;Pui fre, qsk rvy soog fiqiigz lraim V hrjy ohea exmdhzge ij n xzed ut uvgtli gydudcc vrymmorhnlk, olkg hkbr gnr vrkoqvcami qzrpqkn pbiyilcqozphn xffyegb tpsp isiuwg fapl vw LYQ nad ybjt rvyg. X hwz xyk qynsd GL35J wh rfzre xj wfxh gurfoth rzf bi UPOD&#39;w mruxpulnhpekk QF ftgdorrg, upu dvry xyk cars oirn hvh qmxrromrr hb wobr esid tiatxl iw vwpyz osgscg.&quot;
+
+&quot;Nlnc&#39;g... Rldm&#39;z qehcfyvfgi...&quot; Z yovq.
+
+&quot;Yuc kvmpuval lvzvt&#39;h erawmscr cw mag,&quot; Rkbiiz skclrcaeu, &quot;pog zhvoh vmreblu ujet jiua zr yau gips udcc gs pxzrwmr a eujzwhxec ss pdrld qbzmtrod iy wvdru ai vlaojm tm lvyhb. Hb hcs yqwlzkloaj jlvx knog zegvn?&quot;
+
+&quot;Yf....&quot; W muxq, vzeconvag tx pyg kxwpr fxmeems V jaj uolv hi ihrodopq mevybnnxz kea qbeegtspq, &quot;m-sgrf, V kpijy...?&quot;
+
+Sttejt egnsg tm hrikpp obgb mr wzfl T nilg dz cw ac vul yic xfs wszvolh whw wf em vtgimrrr cetata. &quot;Esgb gy, pah osxkhurr hi pgzf finir hjae zvr joifq.&quot;
+
+sfilph: hgwsw://oan.kcrxvx.xsd/x/ipya/oowqcbnu/s2b4md/hc_vddreiwnak_kwwi_rlr_gn35p_wobny/</code></pre> <p>Plugging the ciphertext into an <a href="https://www.mygeocachingprofile.com/codebreaker.vigenerecipher.aspx">online bruteforcing tool</a> we find an approximation of the key</p> <pre><code class=language-plaintext >naverfonmagiceyouuphevergonnaletyoudownneverlonnaeunaroundanddezertyoynevergonrumakeyougryndvergomnasaygoocqyenevergonnatellalieandhurtyouihopeyouenjoyedthissong</code></pre>
+<p>That looks... familiar. Now using CyberChef with the full key and proper spelling, we get</p>
+<h3 id=flag ><a href="#flag" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >lactf&#123;known_plaintext_and_were_off_to_the_races&#125;</code></pre>
+<h2 id=selamat_pagi ><a href="#selamat_pagi" class=header-anchor >selamat pagi</a></h2>
+<p>Another classical cipher. This one I solved mostly by inspection by accumulating enough substitutions to guess the word, and then correcting any spelling mistakes using Google Translate.</p>
+<pre><code class=language-plaintext >Efe kqkbkx czwkf akfs kdkf qzfskf wzdcjtfk
+Ieqku kqk akfs ikxj kck akfs wkak ukikukf :Q
+Lzfqztk ukdj kqk qe wefe: bkvim&#123;wzbkdki_ckse_kckukx_ukdj_wjuk_kfkbewew_mtzujzfwe&#125;</code></pre>
+<p>For example:</p>
+<ul>
+<li><p>Since the flag format was <code>lactf&#123;&#125;</code>, that gives us 5 letters for free.</p>
+
+<li><p>I guessed that the word for flag &#40;<code>bendera</code>&#41; would be in the last line, and there was only one word with the matching number of characters.</p>
+
+<li><p>The end of the flag was beginning to look like the words &quot;frequency analysis&quot;, which in Indonesian would be spelt <code>analisis frekuensi</code>.</p>
+
+<li><p>A search through the <a href="https://blogs.transparent.com/indonesian/100-most-common-indonesian-words-part-one/">100 most common indonesian words</a> for short palindromes gave us a few more letters.</p>
+
+</ul>
+<h3 id=flag__2 ><a href="#flag__2" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >lactf&#123;selamat_pagi_apakah_kamu_suka_analisis_frekuensi&#125;</code></pre>
+<h2 id=very-hot ><a href="#very-hot" class=header-anchor >very-hot</a></h2>
+<p>We have a multiprime RSA problem,</p>
+<pre><code class=language-python >from Crypto.Util.number import getPrime, isPrime, bytes_to_long
+
+# from flag import FLAG
+
+# FLAG &#61; bytes_to_long&#40;FLAG.encode&#40;&#41;&#41;
+
+p &#61; getPrime&#40;384&#41;
+while not isPrime&#40;p &#43; 6&#41; or not isPrime&#40;p &#43; 12&#41;:
+    p &#61; getPrime&#40;384&#41;
+q &#61; p &#43; 6
+r &#61; p &#43; 12
+
+n &#61; p * q * r
+e &#61; 2**16 &#43; 1
+ct &#61; pow&#40;FLAG, e, n&#41;
+
+print&#40;f&quot;n: &#123;n&#125;&quot;&#41;
+print&#40;f&quot;e: &#123;e&#125;&quot;&#41;
+print&#40;f&quot;ct: &#123;ct&#125;&quot;&#41;</code></pre>
+<p>but the prime factors of <code>n</code> are related by a simple equation. In particular <code>p</code> is a root of the polynomial </p>
+<div class=nonumber >\[
+p(p+6)(p+12) - n
+\]</div>
+<p>which we can solve easily in Sage to reveal the factorisation of <code>n</code>.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env sage
+from Crypto.Util.number import *
+
+# Solve polynomial p*&#40;p&#43;6&#41;&#40;p&#43;12&#41; to get p
+n &#61; 10565111742779621369865244442986012561396692673454910362609046015925986143478477636135123823568238799221073736640238782018226118947815621060733362956285282617024125831451239252829020159808921127494956720795643829784184023834660903398677823590748068165468077222708643934113813031996923649853965683973247210221430589980477793099978524923475037870799
+solve&#40;x * &#40;x &#43; 6&#41; * &#40;x &#43; 12&#41; - n, x&#41;
+p &#61; 21942765653871439764422303472543530148312720769660663866142363370143863717044484440248869144329425486818687730842077
+q &#61; p &#43; 6
+r &#61; p &#43; 12
+
+
+e &#61; 65537
+ct &#61; 9953835612864168958493881125012168733523409382351354854632430461608351532481509658102591265243759698363517384998445400450605072899351246319609602750009384658165461577933077010367041079697256427873608015844538854795998933587082438951814536702595878846142644494615211280580559681850168231137824062612646010487818329823551577905707110039178482377985
+
+phi &#61; &#40;p - 1&#41; * &#40;q - 1&#41; * &#40;r - 1&#41;
+d &#61; inverse_mod&#40;e, phi&#41;
+
+print&#40;long_to_bytes&#40;pow&#40;ct, d, n&#41;&#41;&#41;</code></pre>
+<h3 id=flag__3 ><a href="#flag__3" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >lactf&#123;th4t_w45_n0t_so_53xY&#125;</code></pre>
+<h2 id=holyt ><a href="#holyt" class=header-anchor >hOlyT</a></h2>
+<p>We are provided with an RSA problem, and an oracle which, when provided with a quadratic residue \(x\) such that there exists \(x_1, x_2 \in \mathbb{Z}\) with</p>
+<div class=nonumber >\[\begin{aligned}
+x &= x_1^2 \pmod p\\
+x &= x_2^2 \pmod q,
+\end{aligned}\]</div>
+<p>will return one of </p>
+<div class=nonumber >\[\begin{aligned}
+ux_1q + vx_2p &\pmod n\\
+-ux_1q + vx_2p &\pmod n\\
+ux_1q - vx_2p &\pmod n\\
+-ux_1q - vx_2p &\pmod n\\
+\end{aligned}\]</div>
+<p>where \(u, v\) are the Bezout coefficients of \(p\) and \(q\).</p>
+<pre><code class=language-python >from Crypto.Util.number import getPrime, bytes_to_long
+import random
+
+
+def legendre&#40;a, p&#41;:
+    return pow&#40;a, &#40;p - 1&#41; // 2, p&#41;
+
+
+def tonelli&#40;n, p&#41;:
+    q &#61; p - 1
+    s &#61; 0
+    while q &#37; 2 &#61;&#61; 0:
+        q //&#61; 2
+        s &#43;&#61; 1
+    if s &#61;&#61; 1:
+        return pow&#40;n, &#40;p &#43; 1&#41; // 4, p&#41;
+    for z in range&#40;2, p&#41;:
+        if p - 1 &#61;&#61; legendre&#40;z, p&#41;:
+            break
+    c &#61; pow&#40;z, q, p&#41;
+    r &#61; pow&#40;n, &#40;q &#43; 1&#41; // 2, p&#41;
+    t &#61; pow&#40;n, q, p&#41;
+    m &#61; s
+    t2 &#61; 0
+    while &#40;t - 1&#41; &#37; p &#33;&#61; 0:
+        t2 &#61; &#40;t * t&#41; &#37; p
+        for i in range&#40;1, m&#41;:
+            if &#40;t2 - 1&#41; &#37; p &#61;&#61; 0:
+                break
+            t2 &#61; &#40;t2 * t2&#41; &#37; p
+        b &#61; pow&#40;c, 1 &lt;&lt; &#40;m - i - 1&#41;, p&#41;
+        r &#61; &#40;r * b&#41; &#37; p
+        c &#61; &#40;b * b&#41; &#37; p
+        t &#61; &#40;t * c&#41; &#37; p
+        m &#61; i
+    return r
+
+
+def xgcd&#40;a, b&#41;:
+    if a &#61;&#61; 0:
+        return 0, 1
+
+    x1, y1 &#61; xgcd&#40;b &#37; a, a&#41;
+    x &#61; y1 - &#40;b // a&#41; * x1
+    y &#61; x1
+
+    return x, y
+
+
+def crt&#40;a, b, m, n&#41;:
+    m1, n1 &#61; xgcd&#40;m, n&#41;
+    return &#40;b * m * m1 &#43; a * n * n1&#41; &#37; &#40;m * n&#41;
+
+
+def advice&#40;x, p, q&#41;:
+    if legendre&#40;x, p&#41; &#33;&#61; 1:
+        exit&#40;&#41;
+    if legendre&#40;x, q&#41; &#33;&#61; 1:
+        exit&#40;&#41;
+    x1 &#61; tonelli&#40;x, p&#41; * random.choice&#40;&#91;1, -1&#93;&#41;
+    x2 &#61; tonelli&#40;x, q&#41; * random.choice&#40;&#91;1, -1&#93;&#41;
+    y &#61; crt&#40;x1, x2, p, q&#41;
+    return y
+
+
+def main&#40;&#41;:
+    p &#61; getPrime&#40;1024&#41;
+    q &#61; getPrime&#40;1024&#41;
+    N &#61; p * q
+    e &#61; 65537
+    m &#61; bytes_to_long&#40;b&quot;lactf&#123;redacted?&#125;&quot;&#41;
+    ct &#61; pow&#40;m, e, N&#41;
+    print&#40;f&quot;ct &#61; &#123;ct&#125;&quot;&#41;
+    print&#40;f&quot;N &#61; &#123;N&#125;&quot;&#41;
+    print&#40;f&quot;e &#61; &#123;e&#125;&quot;&#41;
+    while 1:
+        x &#61; int&#40;input&#40;&quot;What do you want to ask? &gt; &quot;&#41;&#41;
+        ad &#61; advice&#40;x, p, q&#41;
+        print&#40;ad&#41;
+
+
+if __name__ &#61;&#61; &quot;__main__&quot;:
+    main&#40;&#41;</code></pre>
+<p>The observation here is that \(x = 1\) is a valid input, which reveals to us</p>
+<div class=nonumber >\[\begin{aligned}
+a &= uq - vp \pmod n\\
+b &= uq + vp \pmod n
+\end{aligned}\]</div>
+<p>Then since \(a + b = 2uq \pmod n\) shares a common factor with \(n\), we can recover \(q\) as \(\mathrm{gcd}(a + b, n)\).</p>
+<h3 id=flag__4 ><a href="#flag__4" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >lactf&#123;1s_r4bin_g0d?&#125;</code></pre>
+<h2 id=prove_it ><a href="#prove_it" class=header-anchor >prove it&#33;</a></h2>
+<p>Here we are working in the field \(\mathbb{F}_p\) for a 1024-bit prime \(p\). We are given the values</p>
+<div class=nonumber >\[
+g^s, g^{s^2}, g^{s^3},\ldots, g^{s^7}, \\ g^{\alpha s}, g^{\alpha s^2}, g^{\alpha s^3}, \ldots, g^{\alpha s^7}  
+\]</div>
+<p>for \(g, s, \alpha \in \mathbb{F}_p\) unknown, as well as the coefficients of a polynomial \(t \in \mathbb{F}_p\left[x\right]\) of degree 7. To obtain the flag, we must find non-trivial elements \(f, h, f_\alpha \in \mathbb{F}_p\) such that \(f^\alpha = f_\alpha\) and \(f = h^{t(s)}\). We are allowed two attempts, and if we fail in the first attempt, then \(t(s)\) is given to us and a new polynomial \(t\) is chosen by the server.</p>
+<pre><code class=language-python >#&#33;/usr/local/bin/python
+import random
+from Crypto.Util.number import *
+
+flag &#61; &quot;lactf&#123;??????????&#125;&quot;
+p &#61; 171687271187362402858253153317226779412519708415758861260173615154794651529095285554559087769129718750696204276854381696836947720354758929262422945910586370154930700427498878225153794722572909742395687687136063410003254320613429926120729809300639276228416026933793038009939497928563523775713932771366072739767
+
+if __name__ &#61;&#61; &quot;__main__&quot;:
+    s &#61; random.getrandbits&#40;128&#41;
+    while GCD&#40;s, p - 1&#41; &#33;&#61; 1:
+        s &#61; random.getrandbits&#40;128&#41;
+    alpha &#61; random.getrandbits&#40;40&#41;
+    g &#61; redacted
+    ss &#61; &#91;pow&#40;g, s**i, p&#41; for i in range&#40;1, 8&#41;&#93;
+    alphas &#61; &#91;pow&#40;g, alpha * s**i, p&#41; for i in range&#40;1, 8&#41;&#93;
+    print&#40;f&quot;Use these values to evaluate your polynomials on s&quot;&#41;
+    print&#40;f&quot;Powers of s: &#123;ss&#125;&quot;&#41;
+    print&#40;f&quot;Powers of alpha*s: &#123;alphas&#125;&quot;&#41;
+    tries &#61; 0
+    while True:
+        if tries &gt;&#61; 2:
+            print&#40;&quot;Fool me once shame on you, fool me twice shame on me&quot;&#41;
+            break
+        print&#40;&quot;Can you prove to me you know the polynomial f that im thinking of?&quot;&#41;
+        target &#61; &#91;&#93;
+        for i in range&#40;8&#41;:
+            target.append&#40;random.randrange&#40;p&#41;&#41;
+        print&#40;f&quot;Coefficients of target polynomial: &#123;target&#125;&quot;&#41;
+        ts &#61; sum&#40;&#91;&#40;pow&#40;s, 7 - i, p&#41; * target&#91;i&#93;&#41; &#37; p for i in range&#40;len&#40;target&#41;&#41;&#93;&#41; &#37; p
+        f &#61; int&#40;input&#40;&quot;give me your evaluation of f&#40;s&#41; &gt; &quot;&#41;&#41; &#37; p
+        h &#61; int&#40;input&#40;&quot;give me your evaluation of h&#40;s&#41; &gt; &quot;&#41;&#41; &#37; p
+        fa &#61; int&#40;input&#40;&quot;give me your evaluation of f&#40;alpha * s&#41; &gt; &quot;&#41;&#41; &#37; p
+        if f &lt;&#61; 1 or h &lt;&#61; 1 or fa &lt;&#61; 1 or f &#61;&#61; p - 1 or h &#61;&#61; p - 1 or fa &#61;&#61; p - 1:
+            print&#40;&quot;nope&quot;&#41;
+            exit&#40;&#41;
+
+        if pow&#40;f, alpha, p&#41; &#33;&#61; fa:
+            print&#40;&quot;Failed f_alpha &#33;&#61; fa&quot;&#41;
+
+        if f &#33;&#61; pow&#40;h, ts, p&#41;:
+            print&#40;&quot;Failed h_ts &#33;&#61; f&quot;&#41;
+
+        if pow&#40;f, alpha, p&#41; &#33;&#61; fa or f &#33;&#61; pow&#40;h, ts, p&#41;:
+            print&#40;f&quot;failed&#33; The target was &#123;ts&#125;&quot;&#41;
+            tries &#43;&#61; 1
+            continue
+
+        print&#40;f&quot;you made it&#33; here you got &#123;flag&#125;&quot;&#41;
+        break</code></pre>
+<p>To avoid ambiguity, let \(t_1\) and \(t_2\) be the polynomials chosen by the server in the first and secound rounds respectively. Observe that after the first round, we know both the coefficients of \(t_1 \in \mathbb{F}_p\left[x\right]\) and the value of \(t_1(s)\). Hence \(s\) is a root of the polynomial \(t_1 - t_1(s)\). This allows us to recover the secret element \(s\) &#40;if there are multiple roots, then choose the root closest in size to 128-bits as the most likely candidate&#41;. Then, since we know both \(s\) , \(g^s\) and \(\phi(p) = p - 1\), we can recover \(g\) by taking</p>
+<div class=nonumber >\[
+g = (g^s)^{d} \pmod p
+\]</div>
+<p>where \(d = s^{-1} \pmod {p - 1}\). This reveals to us the redacted value \(g = 2\). Similarly by taking</p>
+<div class=nonumber >\[
+g^\alpha = (g^{\alpha s})^{d}  = ((g^\alpha) ^ s) ^ d \pmod p
+\]</div>
+<p>we can determine the value of \(g^\alpha\).</p>
+<p>We now have enough information to answer the server&#39;s challenge in the second round. Since \(s\) and \(t_2\) are known, then \(t_2(s)\) is known. Put </p>
+<div class=nonumber >\[\begin{aligned}
+f &= g^{t_2(s)} \\
+f_\alpha &= (g^{\alpha})^{t_2(s)} = g^{\alpha t_2(s)}\\
+h &= g
+\end{aligned}\]</div>
+<p>Then </p>
+<div class=nonumber >\[
+f^\alpha = (g^{t_2(s)})^\alpha = g^{\alpha t_2(s)} = f_\alpha\\[1em]
+h^{t_2(s)} = g^{t_2(s)} = f
+\]</div>
+<p>as desired. Below is an implementation of the solution in SageMath.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env python3
+import itertools
+from pwn import *
+
+p &#61; 171687271187362402858253153317226779412519708415758861260173615154794651529095285554559087769129718750696204276854381696836947720354758929262422945910586370154930700427498878225153794722572909742395687687136063410003254320613429926120729809300639276228416026933793038009939497928563523775713932771366072739767
+
+
+def find_g&#40;ss, alphas, coeff_1, ts_1&#41;:
+    K &#61; GF&#40;p&#41;
+    x &#61; PolynomialRing&#40;K, &quot;x&quot;&#41;.gen&#40;&#41;
+    poly &#61; sum&#40;&#91;&#40;x ^ &#40;7 - i&#41; * coeff_1&#91;i&#93;&#41; for i in range&#40;len&#40;coeff_1&#41;&#41;&#93;&#41; - K&#40;ts_1&#41;
+    root &#61; poly.roots&#40;&#41;
+    idx &#61; min&#40;&#40;abs&#40;len&#40;bin&#40;s_&#41;&#41; - 130&#41;, i&#41; for i, &#40;s_, _&#41; in enumerate&#40;root&#41;&#41;&#91;1&#93;
+    print&#40;root&#41;
+    s &#61; root&#91;idx&#93;&#91;0&#93;
+    print&#40;f&quot;Chose s &#61; &#123;s&#125;&quot;&#41;
+    d &#61; inverse_mod&#40;Integer&#40;s&#41;, phi&#41;
+    gs &#61; ss&#91;0&#93;
+    g &#61; pow&#40;gs, d, p&#41;  # g &#61; 2 fixed?
+
+    return g, s, d
+
+
+def evalpoly&#40;base, coeff&#41;:
+    # Assuming base is ordered lowest powers to highest powers
+    # coeff is ordered highest powers to lowest powers
+    return prod&#40;pow&#40;base&#91;7 - i&#93;, coeff&#91;i&#93;, p&#41; for i in range&#40;len&#40;coeff&#41;&#41;&#41; &#37; p
+
+
+def evalpoly_additive&#40;point, coeff&#41;:
+    return sum&#40;&#91;&#40;pow&#40;point, 7 - i, p&#41; * coeff&#91;i&#93;&#41; &#37; p for i in range&#40;len&#40;coeff&#41;&#41;&#93;&#41; &#37; p
+
+
+# First round: Fail deliberately, but keep track of parameters and hints
+conn &#61; connect&#40;&quot;chall.lac.tf&quot;, int&#40;31179&#41;&#41;
+# conn &#61; process&#40;&#91;&quot;python&quot;, &quot;server.py&quot;&#93;&#41;
+print&#40;conn.readline&#40;&#41;&#41;
+ss &#61; conn.readline&#40;&#41;
+ss &#61; eval&#40;ss&#91;len&#40;b&quot;Powers of s: &quot;&#41; :&#93;.decode&#40;&quot;ascii&quot;&#41;&#41;
+alphas &#61; conn.readline&#40;&#41;
+alphas &#61; eval&#40;alphas&#91;len&#40;b&quot;Powers of alpha*s: &quot;&#41; :&#93;.decode&#40;&quot;ascii&quot;&#41;&#41;
+print&#40;conn.readline&#40;&#41;&#41;
+coeff_1 &#61; conn.readline&#40;&#41;
+coeff_1 &#61; eval&#40;coeff_1&#91;len&#40;b&quot;Coefficients of target polynomial: &quot;&#41; :&#93;.decode&#40;&quot;ascii&quot;&#41;&#41;
+conn.sendafter&#40;&quot;give me your evaluation of f&#40;s&#41; &gt; &quot;, &quot;2\n&quot;&#41;
+conn.sendafter&#40;&quot;give me your evaluation of h&#40;s&#41; &gt; &quot;, &quot;2\n&quot;&#41;
+conn.sendafter&#40;&quot;give me your evaluation of f&#40;alpha * s&#41; &gt; &quot;, &quot;2\n&quot;&#41;
+ts_1 &#61; conn.readline&#40;&#41;
+ts_1 &#61; eval&#40;ts_1&#91;len&#40;b&quot;failed&#33; The target was &quot;&#41; :&#93;.decode&#40;&quot;ascii&quot;&#41;&#41;
+
+# Round 2
+# Gather data like in round 1
+print&#40;conn.readline&#40;&#41;&#41;
+coeff_2 &#61; conn.readline&#40;&#41;
+coeff_2 &#61; eval&#40;coeff_2&#91;len&#40;b&quot;Coefficients of target polynomial: &quot;&#41; :&#93;.decode&#40;&quot;ascii&quot;&#41;&#41;
+
+# First solve rsa problem for g
+g, s, d &#61; find_g&#40;ss, alphas, coeff_1, ts_1&#41;
+g_alpha &#61; pow&#40;alphas&#91;0&#93;, d, p&#41;
+
+ss_full &#61; &#91;g&#93; &#43; ss
+alphas_full &#61; &#91;g_alpha&#93; &#43; alphas
+
+# Want f &#61; g^ts_2
+ts_2 &#61; evalpoly_additive&#40;s, coeff_2&#41;
+f &#61; pow&#40;g, ts_2, p&#41;
+fa &#61; pow&#40;g_alpha, ts_2, p&#41;
+h &#61; g
+
+conn.sendafter&#40;&quot;give me your evaluation of f&#40;s&#41; &gt; &quot;, str&#40;f&#41; &#43; &quot;\n&quot;&#41;
+conn.sendafter&#40;&quot;give me your evaluation of h&#40;s&#41; &gt; &quot;, str&#40;h&#41; &#43; &quot;\n&quot;&#41;
+conn.sendafter&#40;&quot;give me your evaluation of f&#40;alpha * s&#41; &gt; &quot;, str&#40;fa&#41; &#43; &quot;\n&quot;&#41;
+print&#40;conn.recvall&#40;&#41;&#41;</code></pre>
+<h3 id=flag__5 ><a href="#flag__5" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >lactf&#123;2kp_1s_ov3rr4t3d&#125;</code></pre>
+<h2 id=budget_bag ><a href="#budget_bag" class=header-anchor >budget bag</a></h2>
+<p>Let \(n\) be the number of characters in the flag. In this challenge, we are given \(n\) points on an unknown elliptic curve \(E / \mathbb{F}_p\) of the form</p>
+<div class=nonumber >\[
+\left[f_1\right]P_1, \left[f_2\right]P_2, \ldots, \left[f_n\right]P_n 
+\]</div>
+<p>where the \(P_i\) are random points of \(E(\mathbb{F}_p)\) and the \(f_i\) are the character codes of the flag after transformation by a simple invertible padding scheme. In addition to the \(n\) points, we are also given their sum in \(E(\mathbb{F}_p)\)</p>
+<div class=nonumber >\[
+s = \sum_{i = 1}^n \left[f_i\right]P_i.
+\]</div>
+<pre><code class=language-python >import random
+from hidden import DollarStore
+p &#61; 95773813056613526295315889615423014145567365190638271416026411091272805051097
+def legendre&#40;a, p&#41;:
+    return pow&#40;a, &#40;p - 1&#41; // 2, p&#41;
+
+def tonelli&#40;n, p&#41;:
+    q &#61; p - 1
+    s &#61; 0
+    while q &#37; 2 &#61;&#61; 0:
+        q //&#61; 2
+        s &#43;&#61; 1
+    if s &#61;&#61; 1:
+        return pow&#40;n, &#40;p &#43; 1&#41; // 4, p&#41;
+    for z in range&#40;2, p&#41;:
+        if p - 1 &#61;&#61; legendre&#40;z, p&#41;:
+            break
+    c &#61; pow&#40;z, q, p&#41;
+    r &#61; pow&#40;n, &#40;q &#43; 1&#41; // 2, p&#41;
+    t &#61; pow&#40;n, q, p&#41;
+    m &#61; s
+    t2 &#61; 0
+    while &#40;t - 1&#41; &#37; p &#33;&#61; 0:
+        t2 &#61; &#40;t * t&#41; &#37; p
+        for i in range&#40;1, m&#41;:
+            if &#40;t2 - 1&#41; &#37; p &#61;&#61; 0:
+                break
+            t2 &#61; &#40;t2 * t2&#41; &#37; p
+        b &#61; pow&#40;c, 1 &lt;&lt; &#40;m - i - 1&#41;, p&#41;
+        r &#61; &#40;r * b&#41; &#37; p
+        c &#61; &#40;b * b&#41; &#37; p
+        t &#61; &#40;t * c&#41; &#37; p
+        m &#61; i
+    return r
+class EllipticCurve:
+    def __init__ &#40;self, a, b, p&#41;:
+        self.p &#61; p
+        self.a &#61; a
+        self.b &#61; b
+    def getPoint&#40;self, x&#41;:
+        ys &#61; &#40;x**3 &#43; self.a*x &#43; self.b&#41; &#37; p
+        if legendre&#40;ys, self.p&#41; &#33;&#61; 1:
+            return None
+        y &#61; tonelli&#40; ys ,p&#41;
+        return CurvePoint&#40;x, y, self&#41;
+    
+class CurvePoint:
+    def __init__&#40;self,x,y, curve&#41;:
+        self.curve &#61; curve
+        self.x &#61; x &#37; curve.p
+        self.y &#61; y &#37; curve.p
+    def __str__&#40;self&#41;:
+        return f&quot;&#40;&#123;self.x&#125;,&#123;self.y&#125;&#41;&quot;
+    def __eq__&#40;self, other&#41;:
+        return str&#40;self&#41; &#61;&#61; str&#40;other&#41;
+    __repr__ &#61; __str__
+    def __add__&#40;self, other&#41;:
+        x1,y1 &#61; self.x, self.y
+        x2,y2 &#61; other.x, other.y
+        if x2 &#61;&#61; 0 and y2 &#61;&#61; 1:
+            return self
+        if x1 &#61;&#61; 0 and y1 &#61;&#61; 1:
+            return other
+        if x1 &#61;&#61; x2 and y2 &#61;&#61; self.curve.p - y1:
+            return CurvePoint&#40;0, 1, self.curve&#41;
+        if x1 &#61;&#61; x2 and y1 &#61;&#61; y2:
+            lam &#61; &#40;&#40;3*pow&#40;x1, 2, self.curve.p&#41; &#43; self.curve.a&#41; * pow&#40;2* y1, -1, self.curve.p&#41;&#41;&#37; self.curve.p
+        else:
+            lam &#61; &#40;&#40;y2 - y1&#41; * pow&#40;x2 - x1, -1, self.curve.p&#41;&#41; &#37; self.curve.p
+        x &#61; &#40;lam**2 - x1 - x2&#41; &#37; self.curve.p
+        y &#61; &#40;lam*&#40;x1 -x&#41; - y1&#41; &#37; self.curve.p
+        return CurvePoint&#40;x, y, self.curve&#41;
+
+
+def scalar_mult&#40;x, n, ec&#41; -&gt; CurvePoint:
+    Q &#61; x
+    R &#61; CurvePoint&#40;0,1 ,ec&#41;
+    if n &#61;&#61; 0: return R
+    if n &#61;&#61; 1: return x
+    while n &gt; 0:
+        if n &#37; 2 &#61;&#61; 1:
+            R &#61; R &#43; Q
+        Q &#61; Q &#43; Q
+        n &#61; n // 2
+    return R
+
+flag &#61; &quot;lactf&#123;REDACTED&#125;&quot; 
+
+flag &#61; flag.lstrip&#40;&quot;lactf&#123;&quot;&#41;.rstrip&#40;&quot;&#125;&quot;&#41;
+
+flagarray &#61; &#91;&#40;&#40;random.randrange&#40;2**10&#41; &gt;&gt; 8&#41; &lt;&lt; 8&#41; &#43; ord&#40;flag&#91;i&#93;&#41; for i in range&#40;len&#40;flag&#41;&#41;&#93;
+
+ec &#61; DollarStore&#40;&#41;
+
+points &#61; &#91;&#93;
+while len&#40;points&#41; &lt; len&#40;flagarray&#41;:
+    x &#61; random.randrange&#40;p&#41;
+    point &#61; ec.getPoint&#40;x&#41;
+    if point &#33;&#61; None:
+        points.append&#40;point&#41;
+
+s &#61; scalar_mult&#40;points&#91;0&#93;, flagarray&#91;0&#93;, ec&#41;
+for i in range&#40;1,len&#40;flagarray&#41;&#41;:
+    s &#43;&#61; &#40;scalar_mult&#40;points&#91;i&#93;, flagarray&#91;i&#93;, ec&#41;&#41;
+
+print&#40;f&quot;s&#61; &#123;s&#125;&quot;&#41;
+
+print&#40;f&quot;points &#61; &#123;points&#125;&quot;&#41;</code></pre>
+<p>Since the hidden elliptic curve \(E\) is defined by a Weierstrass equation with unknown coefficients \(a, b\), we can substitute in two of our given points into the equation</p>
+<div class=nonumber >\[\begin{aligned}
+y^2 = x^3 + ax + b
+\end{aligned}\]</div>
+<p>to recover the hidden values \(a\) and \(b\). This reveals to us that \(a = b = 0\), and so our elliptic curve is in fact the singular curve</p>
+<div class=nonumber >\[\begin{aligned}
+y^2 = x^3.
+\end{aligned}\]</div>
+<p>The elliptic curve group for such curves has a particularly simple structure provided the gradient of the tangent line&#40;s&#41; at the singularity are in the field \(\mathbb{F}_p\): they are either isomorphic to the additive group \(\mathbb{F}_p^{+}\) or the multiplicative group \(\mathbb{F}_p^{\times}\) depending on whether the curve has a node or a cusp at the singularity. <a href="https://www.pdmi.ras.ru/~lowdimma/BSD/Silverman-Arithmetic_of_EC.pdf">Silverman &#40;Proposition III.2.5&#41;</a> provides details of a proof and an explicit formula for the isomorphism. In our case, our curve has a cusp at the origin and the gradient of the tangent line is zero. Hence the map</p>
+<div class=nonumber >\[\begin{aligned}
+\phi : E(K) &\longrightarrow K^{+}\\
+(x,y) &\longmapsto xy^{-1}
+\end{aligned}\]</div>
+<p>is an isomorphism. Applying \(\phi\) to each \(\left[f_i\right]P_i\) as well as \(s\), we obtain the following linear equation in \(\mathbb{F}_p\)</p>
+<div class=nonumber >\[
+\phi(s) = \sum_{i = 1}^n f_i \phi(P_i)
+\]</div>
+<p>with \(n\) unknowns. The solution space forms a \(n - 1\) dimensional affine subspace of \(\mathbb{F}_p^n\). We can lift the solution to a lattice in \(\mathbb{Z}^{n}\) by appending arbitrary linear combinations of \(p\mathbf{e}_1,\ldots,p\mathbf{e}_n \in \mathbb{Z}^n\). Our solution will then be a lattice vector with all coordinates lying the range of the padded character codes. Such a vector can be found by a CVP solver provided we know a suitable estimate for the center of the range. For this, we assume the flag format consists of reasonable ASCII characters, and so each of the \(f_i\)&#39;s should lie within the interval \(\left[65, 890\right] \subseteq \mathbb{Z}\).</p>
+<pre><code class=language-python >#&#33;/usr/bin/env python3
+
+# Initial implementation in Sage to reduce apply the isomorphism and reduce the problem to F_p
+s &#61; &#40;
+    4690331917760414380672348505790486524786128272326163170078478915876334878778,
+    77902523131087061897126273610460347147805642819184490444996378236375931739511,
+&#41;
+
+p &#61; 95773813056613526295315889615423014145567365190638271416026411091272805051097
+
+points &#61; &#91;
+    # large challenge output elided #
+&#93;
+
+
+def find_ec_params&#40;p_1, p_2&#41;:
+    x_1, y_1 &#61; p_1
+    x_2, y_2 &#61; p_2
+
+    a &#61; &#40;&#40;y_1**2 - y_2**2&#41; - &#40;x_1**3 - x_2**3&#41;&#41; * inverse_mod&#40;x_1 - x_2, p&#41;
+    a &#61; a &#37; p
+    b &#61; &#40;y_1**2 - x_1**3 - a * x_1&#41; &#37; p
+
+    return a, b # a &#61; b &#61; 0
+
+K &#61; GF&#40;p&#41;
+
+def isomorphism&#40;pt&#41;:
+    x, y &#61; pt
+    return &#40;x * inverse_mod&#40;y, p&#41;&#41; &#37; p
+
+
+weights &#61; list&#40;map&#40;isomorphism, points&#41;&#41;
+target &#61; isomorphism&#40;s&#41;</code></pre>
+<pre><code class=language-julia ># Implemention of the CVP portion in Julia
+using AbstractAlgebra
+using LinearAlgebra
+
+function solve&#40;&#41;
+  p &#61; 95773813056613526295315889615423014145567365190638271416026411091272805051097
+  K &#61; GF&#40;p&#41;
+  weights &#61; BigInt&#91;
+    40934699560187760118076789839292640635422518557448839865404745220866778025546,
+    78310223071590492194236922321229075543476357564542955520452209526227950970041,
+    91705555999958172847918714712488726144644562704604773757857932534858806325518,
+    42501728239045823811266018530645187132678419583755394096925398410774167785495,
+    46119371924278215331040469610168125127482006988589418572015362580083398169762,
+    2330179126243704396521139915466741247281559783872381157453234051670693598729,
+    34253065139905257255915277994868632884775435324309315594946460625587903576019,
+    68623145750851611402492363714838439447614096997584503429073048348890609090063,
+    55215455687459981679753425402241794055048803159690691698625684881196534104984,
+    13160214960944791745737571666294687886179342741878106108153828171214300480356,
+    93632248451840935013313489637674048557270261830159812386104018347434531096708,
+    15750226451420001555465233524738870514754843878573661397197302153086698120116,
+    35034732986188570282752403373961714079465830549670098557342305666201533823308,
+    22731773695351497338883943431178589221370002456797684486999646027708779697151,
+    60817920765222559034343733934804760803601437813912852650747129379361411913898,
+    53493968718303524964250571104151904930212396250296291581259283032383539967004,
+    70883580398171358365333237193019023493492808520671476249469154781910452853710,
+  &#93;
+
+  target &#61;
+    big&quot;23544990289611147830739672041010834898609229946569110903803362822865326025687&quot;
+
+  A &#61; matrix&#40;K, transpose&#40;weights&#41;&#41;
+  b &#61; matrix&#40;K, reshape&#40;&#91;target&#93;, 1, 1&#41;&#41;
+  particular_sol &#61; AbstractAlgebra.solve&#40;A, b&#41;
+  nullity, homogenous_sol &#61; nullspace&#40;A&#41;
+
+  d &#61; length&#40;particular_sol&#41;
+
+  # Solution is a subspace of Fp^n. Lift solution to ZZ by appending &#40;e1, e2, ..., e_d&#41; to the basis
+  particular_sol &#61; lift.&#40;Matrix&#40;particular_sol&#41;&#41;
+  homogenous_sol &#61; &#91;
+    lift.&#40;Matrix&#40;homogenous_sol&#41;&#41; p*diagm&#40;ones&#40;Int64, d&#41;&#41;
+  &#93;
+
+  reduced_basis &#61; open&#40;&#96;fplll&#96;; read &#61; true, write &#61; true&#41; do fplll
+    write&#40;fplll, to_fplll&#40;transpose&#40;homogenous_sol&#41;&#41;&#41; # tranpose becuase fplll expects row vectors
+    reduced_basis &#61; read&#40;fplll, String&#41;
+    reduced_basis &#61; &quot;&#91;&quot; * join&#40;split&#40;reduced_basis, &quot;\n&quot;&#41;&#91;end-17-1:end&#93;&#41;
+  end
+
+  # What is our target vector?
+  lo &#61; 65
+  hi &#61; 122 &#43; 768
+  for i &#61; lo:hi
+    midpoint &#61; fill&#40;i, d&#41;
+    target &#61; to_fplll&#40;reshape&#40;midpoint - particular_sol, :&#41;&#41;
+
+    closest_vector &#61; open&#40;&#96;fplll -a cvp&#96;; read &#61; true, write &#61; true&#41; do cvp
+      write&#40;cvp, reduced_basis * target&#41;
+      closest &#61; from_fplll&#40;read&#40;cvp, String&#41;&#41;
+    end
+    solution &#61; mod.&#40;particular_sol &#43; closest_vector, p&#41;
+    @show String&#40;UInt8.&#40;decode&#40;solution&#41;&#41;&#41;
+  end
+end
+
+function decode&#40;v&#41;
+  offsets &#61; &#91;0, 256, 512, 768&#93;
+  out &#61; &#91;&#93;
+  for x in v
+    push&#33;&#40;out, x - offsets&#91;searchsortedlast&#40;offsets, x&#41;&#93;&#41;
+  end
+  out
+end
+
+function to_fplll&#40;matrix::AbstractMatrix&#41;
+  ret &#61; &quot;&#91;&quot;
+  for row in eachrow&#40;matrix&#41;
+    ret *&#61; &quot;&#91;&quot; * join&#40;string.&#40;row&#41;, &quot; &quot;&#41; * &quot;&#93;&quot;
+  end
+  ret *&#61; &quot;&#93;&quot;
+
+  ret
+end
+
+function to_fplll&#40;v::AbstractVector&#41;
+  ret &#61; &quot;&#91;&quot; * join&#40;string.&#40;v&#41;, &quot; &quot;&#41; * &quot;&#93;&quot;
+  ret
+end
+
+function from_fplll&#40;v::AbstractString&#41;
+  reshape&#40;permutedims&#40;Meta.eval&#40;Meta.parse&#40;v&#41;&#41;&#41;, :&#41;
+end</code></pre>
+<h3 id=flag__6 ><a href="#flag__6" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >lactf&#123;im_w4y_t00_br0k3&#33;&#125;</code></pre>
+<h2 id=pprngc ><a href="#pprngc" class=header-anchor >pprngc</a></h2>
+<p>In this challenge, we have an unknown invertible function \(f: \mathbb{F}_2^{16} \longrightarrow \mathbb{F}_2^{16}\) and a hidden 16-bit seed value \(s\). Our task is to recover the seed \(s\) given the value of \(f(s)\) and the following oracles.</p>
+<ol>
+<li><p><code>prng</code>-oracle</p>
+
+</ol>
+<p>The <code>prng</code>-oracle chooses a public random 16-bit predicate \(p \in \mathbb{F}_2^{16}\) and produces the value \(f^{17}(s)\) together with 16 values \(S(p) = (s_1, s_2, \ldots, s_{16})\) given by</p>
+<div class=nonumber >\[\begin{aligned}
+s_1 &= \langle f(s), p\rangle\\ 
+s_2 &= \langle f^2(s), p \rangle\\ 
+\vdots\\ 
+s_{16} &= \langle f^{16}(s),  p \rangle
+\end{aligned}\]</div>
+<p>where \(\langle \cdot , \cdot \rangle\) denotes the dot product</p>
+<div class=nonumber >\[
+\langle x, y \rangle = \sum_{i = 1}^n x_iy_i.
+\]</div>
+<p>We are allowed unlimited queries to the <code>prng</code>-oracle.</p>
+<ol start=2 >
+<li><p><code>pprngc</code>-oracle</p>
+
+</ol>
+<p>The <code>pprngc</code>-oracle takes a 16-bit state \(s'\), a \(k\)-bit predicate \(p\) and a \(k\)-bit vector \((t_1, \ldots, t_k)\) such that</p>
+<div class=nonumber >\[
+\langle f^{-i}(s'), p \rangle = t_i, \quad 1 \leq i \leq k. 
+\]</div>
+<p>If valid inputs are provided, the oracle returns the value \(\langle f^{-(k +1)}(s'), p \rangle\). We are allowed to query this oracle at most 16 times.</p>
+<ol start=3 >
+<li><p><code>f</code>-oracle</p>
+
+</ol>
+<p>The <code>f</code>-oracle takes a 16-bit value \(x\) and computes \(f(x)\). We are allowed up to 15 queries to this oracle.</p>
+<pre><code class=language-python >#&#33;/usr/local/bin/python3
+
+import secrets
+from super_secret_stuff import flag, f, f_inverse
+
+seed &#61; secrets.randbits&#40;16&#41;
+function_uses &#61; 0
+oracle_uses &#61; 0
+done &#61; False
+
+
+def compute_output_bit&#40;state, pred&#41;:
+    return bin&#40;&#40;state &amp; pred&#41;&#41;.count&#40;&quot;1&quot;&#41; &#37; 2
+
+
+def prng&#40;pred&#41;:
+    cur_state &#61; seed
+    outputs &#61; &#91;&#93;
+    for i in range&#40;16&#41;:
+        cur_state &#61; f&#40;cur_state&#41;
+        outputs.append&#40;compute_output_bit&#40;cur_state, pred&#41;&#41;
+    cur_state &#61; f&#40;cur_state&#41;
+    cur_state_bits &#61; format&#40;cur_state, &quot;b&quot;&#41;.zfill&#40;16&#41;
+    all_bits &#61; &#40;&quot;&quot;.join&#40;&#91;str&#40;i&#41; for i in outputs&#93;&#41; &#43; cur_state_bits&#41;&#91;::-1&#93;
+    return all_bits
+
+
+def pprngc&#40;pred, stream&#41;:
+    state &#61; int&#40;&quot;&quot;.join&#40;stream&#91;:16&#93;&#91;::-1&#93;&#41;, 2&#41;
+    for i in range&#40;16, len&#40;stream&#41;&#41;:
+        state &#61; f_inverse&#40;state&#41;
+        if not compute_output_bit&#40;state, pred&#41; &#61;&#61; int&#40;stream&#91;i&#93;&#41;:
+            return None
+    state &#61; f_inverse&#40;state&#41;
+    return compute_output_bit&#40;state, pred&#41;
+
+
+print&#40;&quot;All you need to know about f is that it&#39;s a function from 16 bits to 16 bits&quot;&#41;
+print&#40;&quot;The output on today&#39;s secret seed is:&quot;, f&#40;seed&#41;&#41;
+if __name__ &#61;&#61; &quot;__main__&quot;:
+    while not done:
+        choice &#61; input&#40;&quot;What can I do for you? 1. get random bits 2. use f 3. predict next bit 4. guess seed &quot;&#41;.strip&#40;&#41;
+        if choice &#61;&#61; &quot;1&quot;:
+            rand_pred &#61; secrets.randbelow&#40;2**16&#41;
+            output &#61; prng&#40;rand_pred&#41;
+            print&#40;output&#41;
+            print&#40;&quot;Using predicate&quot;, rand_pred&#41;
+            print&#40;&quot;Ignore the fact that the first 16 bits are always the same &#40;or don&#39;t, your choice&#41;&quot;&#41;
+        elif choice &#61;&#61; &quot;2&quot;:
+            if function_uses &#61;&#61; 15:
+                print&#40;&quot;Nah, you&#39;ve had enough.&quot;&#41;
+                continue
+            num &#61; input&#40;&quot;Gimme a number&#33; &quot;&#41;.strip&#40;&#41;
+            try:
+                num &#61; int&#40;num&#41;
+                if num &lt; 0 or num &gt;&#61; 2**16:
+                    print&#40;&quot;Out of range&#33;&quot;&#41;
+                else:
+                    print&#40;f&#40;num&#41;&#41;
+                    function_uses &#43;&#61; 1
+            except:
+                print&#40;&quot;Uh something went wrong.&quot;&#41;
+        elif choice &#61;&#61; &quot;3&quot;:
+            if oracle_uses &#61;&#61; 16:
+                print&#40;&quot;Nah, you&#39;ve had enough.&quot;&#41;
+                continue
+            stream &#61; input&#40;&quot;Gimme the bitstream you want to predict&#33; &quot;&#41;.strip&#40;&#41;
+            if len&#40;stream&#41; &lt; 16:
+                print&#40;&quot;Out of range&#33;&quot;&#41;
+            else:
+                pred &#61; input&#40;&quot;Oh, can you also give a predicate with that? &quot;&#41;.strip&#40;&#41;
+                try:
+                    pred &#61; int&#40;pred&#41;
+                    if pred &lt; 0 or pred &gt;&#61; 2**64:
+                        print&#40;&quot;Out of range&#33;&quot;&#41;
+                    else:
+                        output &#61; pprngc&#40;pred, stream&#41;
+                        if output is None:
+                            print&#40;&quot;Uh lemme get back to you on that...&quot;&#41;
+                            print&#40;&quot;*liquidates assets, purchases fake identity, buys one way ticket to Brazil*&quot;&#41;
+                            done &#61; True
+                        else:
+                            print&#40;output&#41;
+                            oracle_uses &#43;&#61; 1
+                except:
+                    print&#40;&quot;Uh something went wrong.&quot;&#41;
+        elif choice &#61;&#61; &quot;4&quot;:
+            guess &#61; input&#40;&quot;Well, let&#39;s see it&#33; &quot;&#41;.strip&#40;&#41;
+            if str&#40;seed&#41; &#61;&#61; guess:
+                print&#40;flag&#41;
+            else:
+                print&#40;&quot;Nope&#33; Sorry&#33;&quot;&#41;
+            done &#61; True
+        else:
+            print&#40;&quot;Buh bye&#33;&quot;&#41;
+            done &#61; True</code></pre>
+<p>To solve this challenge, we observe that the outputs of the <code>prng</code>-oracle are valid inputs to the <code>pprngc</code>-oracle. Hence, given a pair \((f^{17}(s), S(p))\) from the <code>prng</code>-oracle, we can pass \((f^{17}(s), p, S(p))\) into the <code>pprngc</code>-oracle to obtain the value \(\langle s, p \rangle\) which tells us some information about the parity of set bits in \(s\). Repeating the above process, we hope to obtain enough information about \(s\) within our allotted budget of 16 <code>pprngc</code>-oracle queries to restrict \(s\) to one of at most 16 possibilities. From there, we can use the <code>f</code>-oracle together with the known value of \(f(s)\) to identity \(s\) from amongst the 16 possibilities.</p>
+<p>Depending on which predicates \(p\) are chosen by the <code>prng</code>-oracle, this approach may not always produce enough constraints to achieve the desired condition. In theory, one can query the <code>prng</code>-oracle a large number of times to gather a pool of \(n\) candidate predicates, and then select from those candidates the best set of 16 predicates to pass to the <code>pprngc</code>-oracle. Here, we define &quot;best&quot; to mean a set of predicates \(\{p_1, \ldots, p_{16} \}\) such that each \(p_i\) has low Hamming weight &#40;so that locally the constraint returned by the <code>pprngc</code>-oracle admits a minimal number of solutions&#41;, whilst ensuring that \(p_1 \cdot p_2
+\cdot \ldots \cdot p_{16} = 16\) as vectors in \(\mathbb{Z}^{16}\) &#40;to ensure that globally we have enough information to determine all the bits of \(s\)&#41;. This can be modelled as an integer program</p>
+<div class=nonumber >\[\begin{aligned}
+\mathrm{min} \sum_{i = 1}^{n}&\sum_{j = 1}^{16} w_ip_{i,j}\\
+&\mathrm{s.t}\\
+\sum_{i = 1}^{n} w_ip_{i, j} &\geq 1, \quad 1 \leq j \leq 16\\
+w_{i} &\in \{0, 1\}
+\end{aligned}\]</div>
+<p>where \(p_i = (p_{i, 1}, \ldots, p_{i, 16})\) for \(1 \leq i \leq n\).</p>
+<p>In practice, we can also just retry a couple of times until we get lucky 😛.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env python3
+from pwn import *
+import claripy
+import cvxpy as cp
+import numpy as np
+import time
+
+
+def parse_conn&#40;conn, prefix&#41;:
+    line &#61; conn.readline&#40;&#41;
+    print&#40;line&#41;
+    line &#61; eval&#40;line&#91;len&#40;prefix&#41; :&#93;.decode&#40;&quot;ascii&quot;&#41;&#41;
+    return line
+
+
+MENU &#61; b&quot;What can I do for you? 1. get random bits 2. use f 3. predict next bit 4. guess seed &quot;
+
+
+def get_random_bits&#40;conn&#41;:
+    conn.sendafter&#40;MENU, b&quot;1\n&quot;&#41;
+    # pprng&#40;rand_pred&#41;
+    pprng_rand &#61; conn.readline&#40;&#41;.strip&#40;&#41;
+    pred &#61; parse_conn&#40;conn, &quot;Using predicate&quot;&#41;
+    print&#40;conn.readline&#40;&#41;&#41;
+    return pprng_rand, pred
+
+
+def predict_next_bit&#40;conn, stream, pred&#41;:
+    print&#40;conn.sendafter&#40;MENU, b&quot;3\n&quot;&#41;&#41;
+    print&#40;conn.sendafter&#40;&quot;Gimme the bitstream you want to predict&#33; &quot;, stream &#43; b&quot;\n&quot;&#41;&#41;
+    print&#40;conn.sendafter&#40;&quot;Oh, can you also give a predicate with that? &quot;, pred &#43; &quot;\n&quot;&#41;&#41;
+    mod &#61; parse_conn&#40;conn, &quot;&quot;&#41;
+    return mod
+
+
+def use_f&#40;conn, number&#41;:
+    print&#40;conn.sendafter&#40;MENU, b&quot;2\n&quot;&#41;&#41;
+    print&#40;conn.sendafter&#40;&quot;Gimme a number&#33; &quot;, number &#43; &quot;\n&quot;&#41;&#41;
+    f_num &#61; parse_conn&#40;conn, &quot;&quot;&#41;
+    return f_num
+
+
+def guess_seed&#40;conn, seed&#41;:
+    print&#40;conn.sendafter&#40;MENU, b&quot;4\n&quot;&#41;&#41;
+    print&#40;conn.sendafter&#40;&quot;Well, let&#39;s see it&#33;&quot;, str&#40;seed&#41; &#43; &quot;\n&quot;&#41;&#41;
+    print&#40;conn.recvall&#40;&#41;&#41;
+
+
+# https://stackoverflow.com/questions/15540798/count-number-of-ones-in-a-given-integer
+def count_ones&#40;n&#41;:
+    w &#61; 0
+    while n:
+        w &#43;&#61; 1
+        n &amp;&#61; n - 1
+    return w
+
+
+def predict_bits&#40;conn, pred, bitstream&#41;:
+    shortened_bitstream &#61; bitstream  # shorten bitstream by 1 bit to get one less f_inverse. nevermind i can&#39;t count
+    assert len&#40;shortened_bitstream&#41; &#61;&#61; 32
+    pred_string &#61; str&#40;pred&#41;
+    parity &#61; predict_next_bit&#40;conn, shortened_bitstream, pred_string&#41;
+
+    return pred, parity
+
+
+def collect_and_solve&#40;conn&#41;:
+    # One variable for each bit
+    ZERO &#61; claripy.BVV&#40;int&#40;0&#41;, int&#40;32&#41;&#41;
+    ONE &#61; claripy.BVV&#40;int&#40;1&#41;, int&#40;32&#41;&#41;
+    TWO &#61; claripy.BVV&#40;int&#40;2&#41;, int&#40;32&#41;&#41;
+
+    pred_parity_pairs &#61; &#123;&#125;
+    s &#61; claripy.Solver&#40;&#41;
+    bv &#61; &#91;claripy.BVS&#40;f&quot;bit_&#123;i&#125;&quot;, 32&#41; for i in range&#40;16&#41;&#93;
+
+    # Binary constraint
+    for b in bv:
+        s.add&#40;b &gt;&#61; ZERO&#41;
+        s.add&#40;b &lt;&#61; ONE&#41;
+
+    while True:
+        bitstream, pred &#61; get_random_bits&#40;conn&#41;
+        parity &#61; predict_next_bit&#40;conn, bitstream, str&#40;pred&#41;&#41;
+        pred_parity_pairs&#91;pred&#93; &#61; parity
+
+        # Parity Constraint
+        binary_repr &#61; format&#40;pred, &quot;b&quot;&#41;.zfill&#40;16&#41;  # big endian. 16-bit padded
+
+        hamming_weight &#61; sum&#40;bv&#91;i&#93; for &#40;i, b&#41; in enumerate&#40;binary_repr&#41; if b &#61;&#61; &quot;1&quot;&#41;  # big endian
+        if parity &#61;&#61; 1:
+            parity_bv &#61; ONE
+        else:
+            parity_bv &#61; ZERO
+        s.add&#40;claripy.SMod&#40;hamming_weight, TWO&#41; &#61;&#61; parity_bv&#41;
+
+        if len&#40;pred_parity_pairs&#41; &lt;&#61; 8:  # Don&#39;t try to solve yet. very low chance of success
+            continue
+
+        solutions &#61; &#91;&quot;&quot;.join&#40;str&#40;bit&#41; for bit in sol&#41; for sol in s.batch_eval&#40;bv, 100&#41;&#93;
+        if len&#40;solutions&#41; &gt; 10:
+            print&#40;f&quot;Found &#123;len&#40;solutions&#41;&#125; solutions using &#123;len&#40;s.constraints&#41;&#125; constraints. More solutions than we can verify.&quot;&#41;
+        else:
+            print&#40;f&quot;Found CSP solutions &#123;solutions&#125;&quot;&#41;
+            return solutions
+
+
+def query_f_oracle&#40;conn, f_seed, solutions&#41;:
+    f_uses &#61; 0
+    for solution in solutions:
+        sol_num &#61; int&#40;solution, 2&#41;  # TODO: Endianess?
+
+        if sol_num is None:  # ???
+            print&#40;f&quot;None sol_num for &#123;solution&#125;&quot;&#41;
+        if f_uses &#61;&#61; 15:  # 15 numbers before me were invalid, so this one must be the solution
+            print&#40;&quot;15 numbers before me were invalid, so this one must be the solutione&quot;&#41;
+            return sol_num
+
+        f_num &#61; use_f&#40;conn, str&#40;sol_num&#41;&#41;
+        f_uses &#43;&#61; 1
+        if f_num &#61;&#61; f_seed:
+            return sol_num
+
+    print&#40;&quot;Reached bottom??&quot;&#41;
+
+
+# Initial contact
+start &#61; time.time&#40;&#41;
+first_connect &#61; 0
+try:
+    conn &#61; connect&#40;&quot;chall.lac.tf&quot;, int&#40;31173&#41;&#41;
+    print&#40;conn.readline&#40;&#41;&#41;
+    first_connect &#61; time.time&#40;&#41;
+
+    # f&#40;seed&#41;
+    f_seed &#61; parse_conn&#40;conn, &quot;The output on today&#39;s secret seed is:&quot;&#41;
+
+    # Do all together
+    solutions &#61; collect_and_solve&#40;conn&#41;
+    # Query the f-oracle to find the correct solution
+    seed &#61; query_f_oracle&#40;conn, f_seed, solutions&#41;
+    print&#40;f&quot;Found seed &#123;seed&#125;&quot;&#41;
+    guess_seed&#40;conn, seed&#41;
+
+
+except EOFError:
+    print&#40;&quot;Terminated due to EOF&quot;&#41;
+    end_time &#61; time.time&#40;&#41;
+    print&#40;f&quot;&#123;end_time - start&#125; elapsed from connect to end&quot;&#41;
+    print&#40;f&quot;&#123;first_connect - start&#125; elapsed from first contact to end&quot;&#41;</code></pre>
+<h3 id=flag__7 ><a href="#flag__7" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >lactf&#123;we_love_blum-micali_generators_h1MNZuJSFjlAEwc1&#125;</code></pre>
+<h2 id=shuffler ><a href="#shuffler" class=header-anchor >shuffler</a></h2>
+<p>Fix \(L = 617\). In this challenge, we have a long secret message \(M\) of length \(L\) and a hidden permutation \(\sigma \in S_L\). We are provided the value of \(\sigma(M)\), and our goal is to invert the permutation so we can read the plaintext \(M\).</p>
+<pre><code class=language-python >#&#33;/usr/local/bin/python3
+
+from secrets import randbits
+import math
+from base64 import b64encode
+
+MESSAGE_LENGTH &#61; 617
+
+
+class LCG:
+    def __init__&#40;self, a, c, m, seed&#41;:
+        self.a &#61; a
+        self.c &#61; c
+        self.m &#61; m
+        self.state &#61; seed
+
+    def next&#40;self&#41;:
+        self.state &#61; &#40;self.a * self.state &#43; self.c&#41; &#37; self.m
+        return self.state
+
+
+def generate_random_quad&#40;&#41;:
+    return randbits&#40;64&#41;, randbits&#40;64&#41;, randbits&#40;64&#41;, randbits&#40;64&#41;
+
+
+initial_iters &#61; randbits&#40;16&#41;
+
+
+def encrypt_msg&#40;msg, params&#41;:
+    global initial_iters
+    a, c, m, seed &#61; params
+    L &#61; LCG&#40;a, c, m, seed&#41;
+    for i in range&#40;initial_iters&#41;:
+        L.next&#40;&#41;
+    l &#61; len&#40;msg&#41;
+    permutation &#61; &#91;&#93;
+    chosen_nums &#61; set&#40;&#41;
+    while len&#40;permutation&#41; &lt; l:
+        pos &#61; L.next&#40;&#41; &#37; l
+        if pos not in chosen_nums:
+            permutation.append&#40;pos&#41;
+            chosen_nums.add&#40;pos&#41;
+    output &#61; &quot;&quot;.join&#40;&#91;msg&#91;i&#93; for i in permutation&#93;&#41;
+    return output
+
+
+# period is necessary
+secret &#61; b64encode&#40;open&#40;&quot;secret_message.txt&quot;, &quot;rb&quot;&#41;.read&#40;&#41;.strip&#40;&#41;&#41;.decode&#40;&#41; &#43; &quot;.&quot;
+length &#61; len&#40;secret&#41;
+assert length &#61;&#61; MESSAGE_LENGTH
+
+a, c, m, seed &#61; params &#61; generate_random_quad&#40;&#41;
+enc_secret &#61; encrypt_msg&#40;secret, params&#41;
+
+while True:
+    choice &#61; input&#40;&quot;What do you want to do?\n1: Shuffle a message.\n2: Get the encrypted secret.\n3: Quit.\n&gt; &quot;&#41;
+    if choice &#61;&#61; &quot;1&quot;:
+        message &#61; input&#40;&quot;Ok. What do you have to say?\n&quot;&#41;
+        if len&#40;message&#41; &gt;&#61; length:
+            print&#40;&quot;I ain&#39;t reading allat.\n&quot;&#41;
+        elif math.gcd&#40;len&#40;message&#41;, m&#41; &#33;&#61; 1:
+            print&#40;&quot;Are you trying to hack me?\n&quot;&#41;
+        else:
+            print&#40;f&quot;Here you go: &#123;encrypt_msg&#40;message,params&#41;&#125;\n&quot;&#41;
+    elif choice &#61;&#61; &quot;2&quot;:
+        print&#40;f&quot;Here you go: &#123;enc_secret&#125;\n&quot;&#41;
+    elif choice &#61;&#61; &quot;3&quot;:
+        print&#40;&quot;bye bye&quot;&#41;
+        exit&#40;0&#41;
+    else:
+        print&#40;&quot;Bad choice.\n&quot;&#41;</code></pre>
+<p>The permutation in question is derived from the outputs of a linear congruential generator, and has the form</p>
+<div class=nonumber >\[
+\sigma = \begin{pmatrix}
+1 &2 &3 &\ldots &L\\
+x_1 &x_2 &x_3 &\ldots &x_L\\
+\end{pmatrix}
+\]</div>
+<p>where the \(x_i\) are the remainders after division by \(L\) of a fixed element \(Z = (z_1, z_2, \ldots, z_L) \in (\mathbb{Z}/m\mathbb{Z})^L\) with \(z_i = az_{i-1}+c \pmod m\). </p>
+<p>In addition to \(\sigma(M)\), we are also given to an oracle which effectively reveals to us the first \(n\) coordinates modulo \(n\) of the element \(Z\) for \(n <
+L\) coprime to \(m\). This oracle can be accessed by passing a message consisting of \(n\) unique characters &#40;e.g all UTF-8 codepoints from <code>0x47</code> to <code>0x47&#43;n</code>&#41; to the server&#39;s <code>encrypt_msg</code> function.</p>
+<p>If \(L = a_1 a_2 \cdots a_k\) was composite, then we could use the oracle to find the remainders of the LCG outputs modulo \(a_1,a_2, \ldots,a_k\) and lift these to relations modulo \(L\) using the Chinese remainder theorem. Unfortunately \(L\) is prime, so we need to modify the idea slightly. </p>
+<p>Instead of attempting to lift to relations in \(L\), we will attempt to lift to relations modulo \(N\) for some \(N > m\) which will reveal to us a sample of raw outputs from the LCG. We can do this by glueing together oracle outputs for primes \(p_1, p_2, \ldots,p_k\) such that \(p_i < L\) and \(\prod p_i > m\). This reveals to us the first \(\mathrm{min}\{p_1, p_2, \ldots, p_k\}\) outputs of the LCG. We can then use these outputs to crack the LCG parameters via standard techniques, and from there determine all coordinates of the vector \(Z\).</p>
+<pre><code class=language-julia >using Primes
+using Base64
+
+const MENU &#61; &quot;What do you want to do?\n1: Shuffle a message.\n2: Get the encrypted secret.\n3: Quit.\n&gt; &quot;
+function sendlineafter&#40;conn, prefix, line&#41;
+  print&#40;readuntil&#40;conn, prefix&#41;&#41;
+  write&#40;conn, string&#40;line&#41; * &quot;\n&quot;&#41;
+end
+
+function get_enc_msg&#40;conn&#41;
+  sendlineafter&#40;conn, MENU, &quot;2&quot;&#41;
+  enc_msg &#61; readline&#40;conn&#41;
+  enc_msg &#61; only&#40;match&#40;r&quot;Here you go: &#40;.*&#41;&quot;, enc_msg&#41;&#41;
+
+  enc_msg
+end
+
+function chosen_pt&#40;conn, msg&#41;
+  sendlineafter&#40;conn, MENU, &quot;1&quot;&#41;
+  sendlineafter&#40;conn, &quot;Ok. What do you have to say?&quot;, msg&#41;
+  print&#40;readline&#40;conn&#41;&#41;
+  s &#61; readline&#40;conn&#41;
+  if occursin&#40;&quot;Are you trying to&quot;, s&#41;
+    return nothing
+  else
+    return only&#40;match&#40;r&quot;Here you go: &#40;.*&#41;&quot;, s&#41;&#41;
+  end
+end
+
+function unique_alphabet_string&#40;len&#41;
+  msg &#61; collect&#40;&#39;A&#39;:&#40;&#39;A&#39;&#43;len-1&#41;&#41;
+
+  return join&#40;msg&#41;
+end
+
+function get_sample&#40;msg_len&#41;
+  pt &#61; unique_alphabet_string&#40;msg_len&#41;
+  ct &#61; chosen_pt&#40;conn, pt&#41;
+
+  pt &#61; collect&#40;pt&#41;
+  ct &#61; collect&#40;ct&#41;
+
+  perm &#61; sortperm&#40;pt; lt &#61; &#40;a, b&#41; -&gt; findfirst&#40;&#61;&#61;&#40;a&#41;, ct&#41; &lt; findfirst&#40;&#61;&#61;&#40;b&#41;, ct&#41;&#41;
+  @assert pt&#91;perm&#93; &#61;&#61; ct
+
+  return perm
+end
+
+function crt&#40;res1::BigInt, res2::BigInt, mod1::BigInt, mod2::BigInt&#41;
+  d, u, v &#61; gcdx&#40;mod1, mod2&#41;
+  @assert d &#61;&#61; 1
+  @assert u * mod1 &#43; v * mod2 &#61;&#61; 1
+  x &#61; res1 * v * mod2 &#43; res2 * u * mod1
+  m &#61; mod1 * mod2
+
+  @assert mod&#40;x, mod1&#41; &#61;&#61; mod&#40;res1, mod1&#41;
+  @assert mod&#40;x, mod2&#41; &#61;&#61; mod&#40;res2, mod2&#41;
+
+  return x, m
+end
+
+function reverse_lcg&#40;outputs&#41;
+  t &#61; &#91;outputs&#91;i&#93; - outputs&#91;i-1&#93; for i &#61; 2:length&#40;outputs&#41;&#93;
+  u &#61; &#91;t&#91;i&#43;2&#93; * t&#91;i&#93; - t&#91;i&#43;1&#93;^2 for i &#61; 1:length&#40;t&#41;-2&#93;
+
+  m &#61; nothing
+  for i &#61; 1:10
+    m &#61; gcd&#40;u&#91;1:i&#93;...&#41;
+    @show m
+    if m &lt; big&#40;2&#41;^64
+      break
+    end
+  end
+  # Now we know m, then a &#61; mod&#40;t*modinv&#40;outputs&#91;1&#93; - outputs&#91;2&#93;, m&#41;, m&#41;
+  a &#61; mod&#40;&#40;outputs&#91;3&#93; - outputs&#91;2&#93;&#41; * invmod&#40;outputs&#91;2&#93; - outputs&#91;1&#93;, m&#41;, m&#41;
+  c &#61; mod&#40;outputs&#91;2&#93; - a * outputs&#91;1&#93;, m&#41;
+
+  return a, c, m
+end
+
+function decrypt_msg&#40;enc_msg, a, c, m, initial&#41;
+  enc_msg &#61; collect&#40;enc_msg&#41;
+  perm &#61; &#91;mod&#40;initial, length&#40;enc_msg&#41;&#41;&#93;
+  state &#61; initial
+  while length&#40;perm&#41; &lt; length&#40;enc_msg&#41;
+    state &#61; mod&#40;a * state &#43; c, m&#41;
+
+    if &#33;in&#40;mod&#40;state, length&#40;enc_msg&#41;&#41;, perm&#41;
+      push&#33;&#40;perm, mod&#40;state, length&#40;enc_msg&#41;&#41;&#41;
+    end
+  end
+  perm &#61; perm .&#43; 1              # switch to julia 1-index
+  @assert isperm&#40;perm&#41;
+  inv &#61; invperm&#40;perm&#41;
+
+  pt &#61; join&#40;enc_msg&#91;inv&#93;&#41;
+  print&#40;String&#40;Base64.base64decode&#40;pt&#41;&#41;&#41;
+end
+
+const MESSAGE_LENGTH &#61; 617
+function solve&#40;&#41;
+  conn &#61; connect&#40;&quot;chall.lac.tf&quot;, 31172&#41;
+  enc_msg &#61; get_enc_msg&#40;conn&#41;
+
+
+  msg_len &#61; modulus &#61; big&#40;613&#41;
+  perm &#61; get_sample&#40;msg_len&#41;
+  residues &#61; big.&#40;copy&#40;perm&#41;&#41;
+  moduli &#61; fill&#40;msg_len, msg_len&#41;
+
+  msg_len -&#61; big&#40;1&#41;
+  while modulus &lt;&#61; big&#40;2&#41;^64
+    if &#33;isprime&#40;msg_len&#41;
+      msg_len -&#61; big&#40;1&#41;
+      continue
+    end
+    perm &#61; big.&#40;get_sample&#40;msg_len&#41;&#41;
+
+
+    for &#40;i, &#40;res1, mod1, res2, mod2&#41;&#41; in
+        enumerate&#40;zip&#40;residues, moduli, perm, fill&#40;msg_len, msg_len&#41;&#41;&#41;
+      residues&#91;i&#93;, moduli&#91;i&#93; &#61; crt&#40;res1, res2, mod1, mod2&#41;
+    end
+
+    modulus &#61; lcm&#40;modulus, msg_len&#41;
+    @show modulus
+    msg_len -&#61; 1
+  end
+  residues &#61; mod.&#40;residues, moduli&#41;
+  residues &#61; residues&#91;moduli.&#61;&#61;modulus&#93;
+
+  a, c, m &#61; reverse_lcg&#40;residues&#41;
+
+  decrypt_msg&#40;enc_msg, a, c, m, residues&#91;1&#93;&#41;
+end</code></pre>
+<h3 id=flag__8 ><a href="#flag__8" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >lactf&#123;th3_h0us3_c0uld_n3v3r_l0se_r1ght&#125;</code></pre>
+<h2 id=any-ssg ><a href="#any-ssg" class=header-anchor >any&#37;-ssg</a></h2>
+<p>This challenge takes place inside a graphical Java application which mimics Minecraft, so for brevity I will not reproduce the challenge code here, and instead dive straight into the mathematics.</p>
+<p>Let \(m \in \mathbb{Z}\) and \(a, c \in \mathbb{Z}/m\mathbb{Z}\) be given. Let \(x_0 \in \mathbb{Z}/m\mathbb{Z}\) be fixed, and consider 16 consecutive outputs \(x_1, x_2, \ldots, x_{16}\) from the linear congruential generator</p>
+<div class=nonumber >\[
+    x \mapsto ax + c \pmod m, 
+\]</div>
+<p>with initial value \(x = x_0\).  Then we have the following relations in \(\mathbb{Z}/m\mathbb{Z}\), </p>
+<div class=nonumber >\[\begin{aligned}
+x_1 &= ax_0 + c \pmod m\\
+x_2 &= ax_1 + c \pmod m\\
+&\vdots\\
+x_{16} &= ax_{15} + c \pmod m,\\
+\end{aligned}\]</div>
+<p>or equivalently,</p>
+<div class=nonumber >\[\begin{aligned}
+x_1 &= ax_0 + c \pmod m\\
+x_2 &= a^2x_0 + ac + c \pmod m\\
+&\vdots\\
+x_{16} &= a^{16}x_{0} + c\sum_{i = 0}^{15}a^i \pmod m.\\
+\end{aligned}\]</div>
+<p>Let \(\mathbf{x} = (x_1, x_2, \ldots, x_{16})\), \(\mathbf{v} = (a, a^2, \ldots, a^{16})\) and \(\mathbf{p} = (p_1, \ldots, p_{16})\) where</p>
+<div class=nonumber >\[
+p_j = c\sum_{i = 0}^{j - 1}a^i, \quad 1 \leq j \leq 16.
+\]</div>
+<p>Then we have \(\mathbf{x} = \mathbf{p} + x_0\mathbf{v}\). Fix an integer \(0 < L <
+m\). To obtain the flag for this challenge, we need to find a value of \(x_0\) for which each \(x_i\) is congruent modulo \(m\) to \(b_i\) for some \(b_i \in (L, m)
+\subseteq \mathbb{Z}\).</p>
+<p>The solution proceeds much the same as the solution for <a href="#budget_bag">budget-bag</a>, albeit with vector spaces swapped out for modules since \(m\) is composite. The possible values of \(\mathbf{x}\) forms a 1-dimensional affine submodule of \((\mathbb{Z}/m\mathbb{Z})^{16}\). We can lift to a lattice in \(\mathbb{Z}^{16}\) by appending arbitrary linear combinations of \(m\mathbf{e}_1,\ldots,m\mathbf{e}_{16} \in \mathbb{Z}^{16}\). Under this lifting, the problem reduces to finding a lattice vector with all coordinates lying in the interval \((L, m)\), and this can solved using a CVP solver such as <code>fplll</code>.</p>
+<pre><code class=language-julia >using LinearAlgebra
+
+function to_fplll&#40;matrix::AbstractMatrix&#41;
+  ret &#61; &quot;&#91;&quot;
+  for row in eachrow&#40;matrix&#41;
+    ret *&#61; &quot;&#91;&quot; * join&#40;string.&#40;row&#41;, &quot; &quot;&#41; * &quot;&#93;&quot;
+  end
+  ret *&#61; &quot;&#93;&quot;
+
+  ret
+end
+
+function to_fplll&#40;v::AbstractVector&#41;
+  ret &#61; &quot;&#91;&quot; * join&#40;string.&#40;v&#41;, &quot; &quot;&#41; * &quot;&#93;&quot;
+  ret
+end
+
+function from_fplll&#40;v::AbstractString&#41;
+  reshape&#40;permutedims&#40;Meta.eval&#40;Meta.parse&#40;v&#41;&#41;&#41;, :&#41;
+end
+
+function invert_lcg&#40;x, a, c, m&#41;
+  mod&#40;&#40;x - c&#41; * invmod&#40;a, m&#41;, m&#41;
+end
+
+const m &#61; big&#40;1&#41; &lt;&lt; 52
+const c &#61; big&#40;4164880461924199&#41;
+const a &#61; big&#40;2760624790958533&#41;
+const B &#61; big&#40;4053239664633446&#41;
+
+function solve&#40;&#41;
+  # want an initial value x0 such that
+  # x_1 &#61; a*x_0 &#43; c mod m &gt; B
+  # x_2 &#61; a*x_1 &#43; c mod m
+  #    &#61; a^2x_0 &#43; a*c &#43; c mod m &gt; B
+  # x_3 &#61; a^3x_0 &#43; a^2*c &#43; ac &#43; c mod m &gt; B
+  #
+  # and in general
+  # x_k &#61; a^k x_0 &#43; c*\sum_&#123;i &#61; 0&#125;^&#123;k - 1&#125;a^i mod m
+  #
+  # Note: in rhs, the c*\sum_&#123;i &#61; 0&#125;^&#123;k - 1&#125;a^i mod m term is constant
+  # and the lefthand side is x_0 * &#40;a, a^2, a^3, a^4, .., a^n&#41;
+  n &#61; 16
+  particular_sol &#61; &#91;mod&#40;c * sum&#40;mod&#40;a^i, m&#41; for i &#61; 0:&#40;k-1&#41;&#41;, m&#41; for k &#61; 1:n&#93;
+  homogenous_sol &#61; &#91;mod&#40;big&#40;a&#41;^i, m&#41; for i &#61; 1:n&#93;
+  @assert length&#40;particular_sol&#41; &#61;&#61; length&#40;homogenous_sol&#41;
+
+  # Lift to Z by appending combinations of &#40;e_1, e_2, ... e_n&#41;
+  homogenous_sol &#61; &#91;
+    homogenous_sol m*diagm&#40;ones&#40;BigInt, n&#41;&#41;
+  &#93;
+
+  # LLL-reduce lattice bassis
+  reduced_basis &#61; open&#40;&#96;fplll&#96;; read &#61; true, write &#61; true&#41; do fplll
+    write&#40;fplll, to_fplll&#40;transpose&#40;homogenous_sol&#41;&#41;&#41; # tranpose becuase fplll expects row vectors
+    reduced_basis &#61; read&#40;fplll, String&#41;
+    reduced_basis &#61; &quot;&#91;&quot; * join&#40;split&#40;reduced_basis, &quot;\n&quot;&#41;&#91;2:end&#93;&#41; # first row is all zeros, remove it
+  end
+
+  midpoint &#61; fill&#40;fld&#40;B &#43; m, 2&#41;, n&#41;
+  target &#61; to_fplll&#40;reshape&#40;midpoint - particular_sol, :&#41;&#41;
+
+  closest_vector &#61; open&#40;&#96;fplll -a cvp&#96;; read &#61; true, write &#61; true&#41; do cvp
+    write&#40;cvp, reduced_basis * target&#41;
+    closest &#61; from_fplll&#40;read&#40;cvp, String&#41;&#41;
+  end
+
+  solution &#61; mod.&#40;particular_sol &#43; closest_vector, m&#41;
+
+
+  @assert all&#40;solution&#91;i&#93; &#61;&#61; mod&#40;a * solution&#91;i-1&#93; &#43; c, m&#41; for i &#61; 2:length&#40;solution&#41;&#41;
+
+  x_1 &#61; first&#40;solution&#41;
+  x_0 &#61; invert_lcg&#40;x_1, a, c, m&#41;
+  for _ &#61; 1:26
+    x_0 &#61; invert_lcg&#40;x_0, a, c, m&#41;
+  end
+
+  rng_i &#61; 3473400794307473
+  seed &#61; xor&#40;x_0, rng_i&#41;
+  @show seed
+  seed
+end</code></pre>
+<h3 id=flag__9 ><a href="#flag__9" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >lactf&#123;c0ngr4ts_0n_th3_w0rld_r3c0rd&#125;</code></pre>
+<div class=page-foot >
+    Last modified: March 03, 2024.
+    Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+</div>
+</div>
+        </div> 
+    </div> 
+    
+        <script src="/wednesday/libs/katex/katex.min.js"></script>
+<script src="/wednesday/libs/katex/contrib/auto-render.min.js"></script>
+<script>renderMathInElement(document.body)</script>
+
+    
+    
+        <script src="/wednesday/libs/highlight/highlight.min.js"></script>
+<script>hljs.highlightAll();hljs.configure({tabReplace: '    '});</script>
