@@ -830,16 +830,16 @@ there, we can use the `f`-oracle together with the known value of $f(s)$ to
 identity $s$ from amongst the 16 possibilities.
 
 Depending on which predicates $p$ are chosen by the `prng`-oracle, this approach
-may not always produce enough constraints to achieve the desired condition.
-In theory, one can query the `prng`-oracle a large number of times to gather
-a pool of $n$ candidate predicates, and then select from those candidates the
-best set of 16 predicates to pass to the `pprngc`-oracle. Here, we define "best"
-to mean a set of predicates $\{p_1, \ldots, p_{16} \}$ such that each $p_i$ has
-low Hamming weight (so that locally the constraint returned by the
-`pprngc`-oracle admits a minimal number of solutions), whilst ensuring that $p_1 \cdot p_2
-\cdot \ldots \cdot p_{16} = 16$ as vectors in $\mathbb{Z}^{16}$ (to ensure that
-globally we have enough information to determine all the bits of $s$). This can
-be modelled as an integer program
+may not always produce enough constraints to achieve the desired condition. In
+theory, one can query the `prng`-oracle a large number of times to gather a pool
+of $n$ candidate predicates, and then select from those candidates the best set
+of 16 predicates to pass to the `pprngc`-oracle. Here, we define "best" to mean
+a set of predicates $\{p_1, \ldots, p_{16} \}$ such that each $p_i$ has low
+Hamming weight (so that locally the constraint returned by the `pprngc`-oracle
+admits a minimal number of solutions), whilst ensuring that the element wise
+product $p_1 \cdot p_2 \cdot \ldots \cdot p_{16} = (1, \ldots, 1)$ as vectors in
+$\mathbb{Z}^{16}$ (to ensure that globally we have enough information to
+determine all the bits of $s$). This can be modelled as an integer program
 
 \begin{align*}
 \mathrm{min} \sum_{i = 1}^{n}&\sum_{j = 1}^{16} w_ip_{i,j}\\
