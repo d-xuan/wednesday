@@ -971,7 +971,7 @@ x^{127} x = x^{128} = (x^{128} + 1) + 1 = 1,
     H_1 &= Ax^a + Bx^b\\
     H_2 &= Ax^c + Bx^d.
 \end{aligned}\]</div>
-<p>Given fixed values of \(x^a, x^b, x^c, x^d\), this becomes a system of linear equations over a principal ideal domain, and we can solve for the corresponding \(A\) and \(B\) using the Hermite normal form. </p>
+<p>Given fixed values of \(x^a, x^b, x^c, x^d\), this becomes a system of linear equations over a ring, and we can solve for the corresponding \(A\) and \(B\) using the Hermite normal form. </p>
 <p>Below is an implementation of the above solution in Julia using the <a href="https://www.oscar-system.org/">Oscar Computer Algebra System</a></p>
 <pre><code class=language-julia >using Sockets
 using Oscar
