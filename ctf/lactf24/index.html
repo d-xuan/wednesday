@@ -759,8 +759,7 @@ if __name__ &#61;&#61; &quot;__main__&quot;:
             print&#40;&quot;Buh bye&#33;&quot;&#41;
             done &#61; True</code></pre>
 <p>To solve this challenge, we observe that the outputs of the <code>prng</code>-oracle are valid inputs to the <code>pprngc</code>-oracle. Hence, given a pair \((f^{17}(s), S(p))\) from the <code>prng</code>-oracle, we can pass \((f^{17}(s), p, S(p))\) into the <code>pprngc</code>-oracle to obtain the value \(\langle s, p \rangle\) which tells us some information about the parity of set bits in \(s\). Repeating the above process, we hope to obtain enough information about \(s\) within our allotted budget of 16 <code>pprngc</code>-oracle queries to restrict \(s\) to one of at most 16 possibilities. From there, we can use the <code>f</code>-oracle together with the known value of \(f(s)\) to identity \(s\) from amongst the 16 possibilities.</p>
-<p>Depending on which predicates \(p\) are chosen by the <code>prng</code>-oracle, this approach may not always produce enough constraints to achieve the desired condition. In theory, one can query the <code>prng</code>-oracle a large number of times to gather a pool of \(n\) candidate predicates, and then select from those candidates the best set of 16 predicates to pass to the <code>pprngc</code>-oracle. Here, we define &quot;best&quot; to mean a set of predicates \(\{p_1, \ldots, p_{16} \}\) such that each \(p_i\) has low Hamming weight &#40;so that locally the constraint returned by the <code>pprngc</code>-oracle admits a minimal number of solutions&#41;, whilst ensuring that \(p_1 \cdot p_2
-\cdot \ldots \cdot p_{16} = 16\) as vectors in \(\mathbb{Z}^{16}\) &#40;to ensure that globally we have enough information to determine all the bits of \(s\)&#41;. This can be modelled as an integer program</p>
+<p>Depending on which predicates \(p\) are chosen by the <code>prng</code>-oracle, this approach may not always produce enough constraints to achieve the desired condition. In theory, one can query the <code>prng</code>-oracle a large number of times to gather a pool of \(n\) candidate predicates, and then select from those candidates the best set of 16 predicates to pass to the <code>pprngc</code>-oracle. Here, we define &quot;best&quot; to mean a set of predicates \(\{p_1, \ldots, p_{16} \}\) such that each \(p_i\) has low Hamming weight &#40;so that locally the constraint returned by the <code>pprngc</code>-oracle admits a minimal number of solutions&#41;, whilst ensuring that the element wise product \(p_1 \cdot p_2 \cdot \ldots \cdot p_{16} = (1, \ldots, 1)\) as vectors in \(\mathbb{Z}^{16}\) &#40;to ensure that globally we have enough information to determine all the bits of \(s\)&#41;. This can be modelled as an integer program</p>
 <div class=nonumber >\[\begin{aligned}
 \mathrm{min} \sum_{i = 1}^{n}&\sum_{j = 1}^{16} w_ip_{i,j}\\
 &\mathrm{s.t}\\
@@ -1257,7 +1256,7 @@ end</code></pre>
 <h3 id=flag__9 ><a href="#flag__9" class=header-anchor >Flag</a></h3>
 <pre><code class=language-plaintext >lactf&#123;c0ngr4ts_0n_th3_w0rld_r3c0rd&#125;</code></pre>
 <div class=page-foot >
-    Last modified: March 03, 2024.
+    Last modified: March 14, 2024.
     Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
 </div>
 </div>

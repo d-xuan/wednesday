@@ -1,0 +1,1126 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/katex/katex.min.css"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=stylesheet  href="/wednesday/css/dark-reader.css"> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>HTB Cyber Apocalypse 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> </ul> </div> <div id=main > <div class=franklin-content ><h1 id=htb_cyber_apocalypse_2024 ><a href="#htb_cyber_apocalypse_2024" class=header-anchor >HTB Cyber Apocalypse 2024</a></h1> <p>Thank you to the HackTheBox team for hosting this event. Below are writeups for all the cryptography challenges.</p> <div class=franklin-toc ><ol><li><a href="#dynastic">Dynastic</a><li><a href="#makeshift">Makeshift</a><li><a href="#primary_knowledge">Primary Knowledge</a><li><a href="#iced_tea">Iced TEA</a><li><a href="#blunt">Blunt</a><li><a href="#arranged">Arranged</a><li><a href="#partial_tenacity">Partial Tenacity</a><li><a href="#permuted">Permuted</a><li><a href="#tsayaki">Tsayaki</a><li><a href="#rot128">ROT128</a></ol></div> <h2 id=dynastic ><a href="#dynastic" class=header-anchor >Dynastic</a></h2> <p>We are given a string encrypted with a classical cipher.</p> <pre><code class=language-python >from secret import FLAG
+from random import randint
+
+def to_identity_map&#40;a&#41;:
+    return ord&#40;a&#41; - 0x41
+
+def from_identity_map&#40;a&#41;:
+    return chr&#40;a &#37; 26 &#43; 0x41&#41;
+
+def encrypt&#40;m&#41;:
+    c &#61; &#39;&#39;
+    for i in range&#40;len&#40;m&#41;&#41;:
+        ch &#61; m&#91;i&#93;
+        if not ch.isalpha&#40;&#41;:
+            ech &#61; ch
+        else:
+            chi &#61; to_identity_map&#40;ch&#41;
+            ech &#61; from_identity_map&#40;chi &#43; i&#41;
+        c &#43;&#61; ech
+    return c
+
+with open&#40;&#39;output.txt&#39;, &#39;w&#39;&#41; as f:
+    f.write&#40;&#39;Make sure you wrap the decrypted text with the HTB flag format :-&#93;\n&#39;&#41;
+    f.write&#40;encrypt&#40;FLAG&#41;&#41;</code></pre> <pre><code class=language-plaintext >DJF_CTA_SWYH_NPDKK_MBZ_QPHTIGPMZY_KRZSQE?&#33;_ZL_CN_PGLIMCU_YU_KJODME_RYGZXL</code></pre>
+<p>From inspecting the code, it looks like the encryption involves mapping each alphabetic character to the range \([0, 25]\) by subtracting the ASCII code 0x41 for capital A. Then a circular alphabetic shift is applied to each character before being converted back into proper ASCII character codes. Luckily all the above operations are invertible, so we can undo the encryption to recover the flag.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env python3
+
+ct &#61; &quot;DJF_CTA_SWYH_NPDKK_MBZ_QPHTIGPMZY_KRZSQE?&#33;_ZL_CN_PGLIMCU_YU_KJODME_RYGZXL&quot;
+
+def to_identity_map_inverse&#40;a&#41;:
+    return chr&#40;a &#43; 0x41&#41;
+
+
+pt &#61; &quot;&quot;
+for i in range&#40;len&#40;ct&#41;&#41;:
+    ch &#61; ct&#91;i&#93;
+    if not ch.isalpha&#40;&#41;:
+        pt &#61; pt &#43; ch
+        continue
+    else:
+        x &#61; ord&#40;ch&#41; - 0x41
+        y &#61; &#40;x - i&#41; &#37; 26
+        z &#61; y &#43; 0x41
+        pt &#61; pt &#43; chr&#40;z&#41;
+
+print&#40;pt&#41;</code></pre>
+<h3 id=flag ><a href="#flag" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >HTB&#123;DID_YOU_KNOW_ABOUT_THE_TRITHEMIUS_CIPHER?&#33;_IT_IS_SIMILAR_TO_CAESAR_CIPHER&#125;</code></pre>
+<h2 id=makeshift ><a href="#makeshift" class=header-anchor >Makeshift</a></h2>
+<p>We have a classical cipher which encrypts a message by permuting the characters in a set pattern.</p>
+<pre><code class=language-python >from secret import FLAG
+
+flag &#61; FLAG&#91;::-1&#93;
+new_flag &#61; &#39;&#39;
+
+for i in range&#40;0, len&#40;flag&#41;, 3&#41;:
+    new_flag &#43;&#61; flag&#91;i&#43;1&#93;
+    new_flag &#43;&#61; flag&#91;i&#43;2&#93;
+    new_flag &#43;&#61; flag&#91;i&#93;
+
+print&#40;new_flag&#41;</code></pre>
+<pre><code class=language-plaintext >&#33;?&#125;De&#33;e3d_5n_nipaOw_3eTR3bt4&#123;_THB</code></pre>
+<p>Once again, all the operations are invertible, so we can undo the shuffling to recover the flag.</p>
+<pre><code class=language-python >new_flag &#61; &quot;&#33;?&#125;De&#33;e3d_5n_nipaOw_3eTR3bt4&#123;_THB&quot;
+
+flag &#61; &#91;&quot;&quot;&#93; * 100
+j &#61; 0
+for i in range&#40;0, len&#40;flag&#41;, 3&#41;:
+    flag&#91;i &#43; 1&#93; &#61; new_flag&#91;j&#93;
+    j &#43;&#61; 1
+    flag&#91;i &#43; 2&#93; &#61; new_flag&#91;j&#93;
+    j &#43;&#61; 1
+    flag&#91;i&#93; &#61; new_flag&#91;j&#93;
+    j &#43;&#61; 1
+
+print&#40;&quot;&quot;.join&#40;flag&#41;&#91;::-1&#93;&#41;</code></pre>
+<h3 id=flag__2 ><a href="#flag__2" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >HTB&#123;4_b3tTeR_w3apOn_i5_n3edeD&#33;?&#33;&#125;</code></pre>
+<h2 id=primary_knowledge ><a href="#primary_knowledge" class=header-anchor >Primary Knowledge</a></h2>
+<p>We are given a flag encrypted with an RSA-like encryption scheme, </p>
+<div class=nonumber >\[
+c = m^e \pmod n.
+\]</div>
+<p>However unlike regular RSA, \(n\) is a prime rather than a product of primes. This means we can recover \(\phi(n) = n - 1\), and \(d = e^{-1} \pmod {\phi(n)}\). Then the plaintext is given by</p>
+<div class=nonumber >\[
+m = c^d \pmod n.
+\]</div>
+<pre><code class=language-python >#&#33;/usr/bin/env sage
+from Crypto.Util.number import *
+
+n &#61; 144595784022187052238125262458232959109987136704231245881870735843030914418780422519197073054193003090872912033596512666042758783502695953159051463566278382720140120749528617388336646147072604310690631290350467553484062369903150007357049541933018919332888376075574412714397536728967816658337874664379646535347
+e &#61; 65537
+c &#61; 15114190905253542247495696649766224943647565245575793033722173362381895081574269185793855569028304967185492350704248662115269163914175084627211079781200695659317523835901228170250632843476020488370822347715086086989906717932813405479321939826364601353394090531331666739056025477042690259429336665430591623215
+
+# n is prime
+d &#61; inverse_mod&#40;e, n - 1&#41;
+m &#61; pow&#40;c, d, n&#41;
+print&#40;long_to_bytes&#40;m&#41;&#41;</code></pre>
+<h3 id=flag__3 ><a href="#flag__3" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >HTB&#123;0h_d4mn_4ny7h1ng_r41s3d_t0_0_1s_1&#33;&#33;&#33;&#125;</code></pre>
+<h2 id=iced_tea ><a href="#iced_tea" class=header-anchor >Iced TEA</a></h2>
+<p>We are given a ciphertext and the encryption key for a message encrypted with the <a href="https://en.wikipedia.org/wiki/Tiny_Encryption_Algorithm">TEA cipher</a>.</p>
+<pre><code class=language-python >import os
+from secret import FLAG
+from Crypto.Util.Padding import pad
+from Crypto.Util.number import bytes_to_long as b2l, long_to_bytes as l2b
+from enum import Enum
+
+class Mode&#40;Enum&#41;:
+    ECB &#61; 0x01
+    CBC &#61; 0x02
+
+class Cipher:
+    def __init__&#40;self, key, iv&#61;None&#41;:
+        self.BLOCK_SIZE &#61; 64
+        self.KEY &#61; &#91;b2l&#40;key&#91;i:i&#43;self.BLOCK_SIZE//16&#93;&#41; for i in range&#40;0, len&#40;key&#41;, self.BLOCK_SIZE//16&#41;&#93;
+        self.DELTA &#61; 0x9e3779b9
+        self.IV &#61; iv
+        if self.IV:
+            self.mode &#61; Mode.CBC
+        else:
+            self.mode &#61; Mode.ECB
+    
+    def _xor&#40;self, a, b&#41;:
+        return b&#39;&#39;.join&#40;bytes&#40;&#91;_a ^ _b&#93;&#41; for _a, _b in zip&#40;a, b&#41;&#41;
+
+    def encrypt&#40;self, msg&#41;:
+        msg &#61; pad&#40;msg, self.BLOCK_SIZE//8&#41;
+        blocks &#61; &#91;msg&#91;i:i&#43;self.BLOCK_SIZE//8&#93; for i in range&#40;0, len&#40;msg&#41;, self.BLOCK_SIZE//8&#41;&#93;
+        
+        ct &#61; b&#39;&#39;
+        if self.mode &#61;&#61; Mode.ECB:
+            for pt in blocks:
+                ct &#43;&#61; self.encrypt_block&#40;pt&#41;
+        elif self.mode &#61;&#61; Mode.CBC:
+            X &#61; self.IV
+            for pt in blocks:
+                enc_block &#61; self.encrypt_block&#40;self._xor&#40;X, pt&#41;&#41;
+                ct &#43;&#61; enc_block
+                X &#61; enc_block
+        return ct
+
+    def encrypt_block&#40;self, msg&#41;:
+        m0 &#61; b2l&#40;msg&#91;:4&#93;&#41;
+        m1 &#61; b2l&#40;msg&#91;4:&#93;&#41;
+        K &#61; self.KEY
+        msk &#61; &#40;1 &lt;&lt; &#40;self.BLOCK_SIZE//2&#41;&#41; - 1
+
+        s &#61; 0
+        for i in range&#40;32&#41;:
+            s &#43;&#61; self.DELTA
+            m0 &#43;&#61; &#40;&#40;m1 &lt;&lt; 4&#41; &#43; K&#91;0&#93;&#41; ^ &#40;m1 &#43; s&#41; ^ &#40;&#40;m1 &gt;&gt; 5&#41; &#43; K&#91;1&#93;&#41;
+            m0 &amp;&#61; msk
+            m1 &#43;&#61; &#40;&#40;m0 &lt;&lt; 4&#41; &#43; K&#91;2&#93;&#41; ^ &#40;m0 &#43; s&#41; ^ &#40;&#40;m0 &gt;&gt; 5&#41; &#43; K&#91;3&#93;&#41;
+            m1 &amp;&#61; msk
+        
+        m &#61; &#40;&#40;m0 &lt;&lt; &#40;self.BLOCK_SIZE//2&#41;&#41; &#43; m1&#41; &amp; &#40;&#40;1 &lt;&lt; self.BLOCK_SIZE&#41; - 1&#41; # m &#61; m0 || m1
+
+        return l2b&#40;m&#41;
+
+
+
+if __name__ &#61;&#61; &#39;__main__&#39;:
+    KEY &#61; os.urandom&#40;16&#41;
+    cipher &#61; Cipher&#40;KEY&#41;
+    ct &#61; cipher.encrypt&#40;FLAG&#41;
+    with open&#40;&#39;output.txt&#39;, &#39;w&#39;&#41; as f:
+        f.write&#40;f&#39;Key : &#123;KEY.hex&#40;&#41;&#125;\nCiphertext : &#123;ct.hex&#40;&#41;&#125;&#39;&#41;</code></pre>
+<h3 id=flag__4 ><a href="#flag__4" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >Key : 850c1413787c389e0b34437a6828a1b2
+Ciphertext : b36c62d96d9daaa90634242e1e6c76556d020de35f7a3b248ed71351cc3f3da97d4d8fd0ebc5c06a655eb57f2b250dcb2b39c8b2000297f635ce4a44110ec66596c50624d6ab582b2fd92228a21ad9eece4729e589aba644393f57736a0b870308ff00d778214f238056b8cf5721a843</code></pre>
+<p>Since we know the key, all the operations in the encryption become invertible, so we can implement our own decryption method inside the <code>Cipher</code> class</p>
+<pre><code class=language-python >def decrypt&#40;self, msg&#41;:
+    blocks &#61; &#91;msg&#91;i : i &#43; self.BLOCK_SIZE // 8&#93; for i in range&#40;0, len&#40;msg&#41;, self.BLOCK_SIZE // 8&#41;&#93;
+
+    pt &#61; b&quot;&quot;
+    if self.mode &#61;&#61; Mode.ECB:
+        for ct in blocks:
+            pt &#43;&#61; self.decrypt_block&#40;ct&#41;
+    elif self.mode &#61;&#61; Mode.CBC:
+        X &#61; self.IV
+        for ct in blocks:
+            pt_block &#61; self._xor&#40;X, self.decrypt_block&#40;ct&#41;&#41;
+            pt &#43;&#61; pt_block
+            X &#61; ct
+    return pt
+
+def decrypt_block&#40;self, msg&#41;:
+    m0 &#61; b2l&#40;msg&#91;:4&#93;&#41;
+    m1 &#61; b2l&#40;msg&#91;4:&#93;&#41;
+    K &#61; self.KEY
+    msk &#61; &#40;1 &lt;&lt; &#40;self.BLOCK_SIZE // 2&#41;&#41; - 1
+    s &#61; 84941944608
+    for i in range&#40;32&#41;:
+        m1 -&#61; &#40;&#40;m0 &lt;&lt; 4&#41; &#43; K&#91;2&#93;&#41; ^ &#40;m0 &#43; s&#41; ^ &#40;&#40;m0 &gt;&gt; 5&#41; &#43; K&#91;3&#93;&#41;
+        m1 &#61; m1 &#37; &#40;msk &#43; 1&#41;
+        m0 -&#61; &#40;&#40;m1 &lt;&lt; 4&#41; &#43; K&#91;0&#93;&#41; ^ &#40;m1 &#43; s&#41; ^ &#40;&#40;m1 &gt;&gt; 5&#41; &#43; K&#91;1&#93;&#41;
+        m0 &#61; m0 &#37; &#40;msk &#43; 1&#41;
+        s -&#61; self.DELTA
+    return l2b&#40;m0&#41; &#43; l2b&#40;m1&#41;</code></pre>
+<p>From there, we can decrypt the given key-ciphertext pair to obtain the flag.</p>
+<pre><code class=language-python >KEY &#61; bytes.fromhex&#40;&quot;850c1413787c389e0b34437a6828a1b2&quot;&#41;
+CIPHERTEXT &#61; bytes.fromhex&#40;
+    &quot;b36c62d96d9daaa90634242e1e6c76556d020de35f7a3b248ed71351cc3f3da97d4d8fd0ebc5c06a655eb57f2b250dcb2b39c8b2000297f635ce4a44110ec66596c50624d6ab582b2fd92228a21ad9eece4729e589aba644393f57736a0b870308ff00d778214f238056b8cf5721a843&quot;
+&#41;
+cipher &#61; Cipher&#40;KEY&#41;
+pt &#61; cipher.decrypt&#40;CIPHERTEXT&#41;</code></pre>
+<h3 id=flag__5 ><a href="#flag__5" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >HTB&#123;th1s_1s_th3_t1ny_3ncryp710n_4lg0r1thm_____y0u_m1ght_h4v3_4lr34dy_s7umbl3d_up0n_1t_1f_y0u_d0_r3v3rs1ng&#125;</code></pre>
+<h2 id=blunt ><a href="#blunt" class=header-anchor >Blunt</a></h2>
+<p>We are given the public outputs from a finite field Diffie-Hellman exchange.</p>
+<pre><code class=language-python >from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from Crypto.Util.number import getPrime, long_to_bytes
+from hashlib import sha256
+
+from secret import FLAG
+
+import random
+
+
+p &#61; getPrime&#40;32&#41;
+print&#40;f&#39;p &#61; 0x&#123;p:x&#125;&#39;&#41;
+
+g &#61; random.randint&#40;1, p-1&#41;
+print&#40;f&#39;g &#61; 0x&#123;g:x&#125;&#39;&#41;
+
+a &#61; random.randint&#40;1, p-1&#41;
+b &#61; random.randint&#40;1, p-1&#41;
+
+A, B &#61; pow&#40;g, a, p&#41;, pow&#40;g, b, p&#41;
+
+print&#40;f&#39;A &#61; 0x&#123;A:x&#125;&#39;&#41;
+print&#40;f&#39;B &#61; 0x&#123;B:x&#125;&#39;&#41;
+
+C &#61; pow&#40;A, b, p&#41;
+assert C &#61;&#61; pow&#40;B, a, p&#41;
+
+# now use it as shared secret
+hash &#61; sha256&#40;&#41;
+hash.update&#40;long_to_bytes&#40;C&#41;&#41;
+
+key &#61; hash.digest&#40;&#41;&#91;:16&#93;
+iv &#61; b&#39;\xc1V2\xe7\xed\xc7@8\xf9\\\xef\x80\xd7\x80L*&#39;
+cipher &#61; AES.new&#40;key, AES.MODE_CBC, iv&#41;
+
+encrypted &#61; cipher.encrypt&#40;pad&#40;FLAG, 16&#41;&#41;
+print&#40;f&#39;ciphertext &#61; &#123;encrypted&#125;&#39;&#41;</code></pre>
+<p>Note that the size of the prime modulus \(p\) is unusually small &#40;only 32-bits&#41;. This suggests that we should be able to recover the shared secret by solving the discrete log problem.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env sage
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from Crypto.Util.number import getPrime, long_to_bytes
+from hashlib import sha256
+
+ciphertext &#61; b&quot;\x94\x99\x01\xd1\xad\x95\xe0\x13\xb3\xacZj&#123;\x97|z\x1a&#40;&amp;\xe8\x01\xe4Y\x08\xc4\xbeN\xcd\xb2*\xe6&#123;&quot;
+
+p &#61; 0xDD6CC28D
+K &#61; GF&#40;p&#41;
+g &#61; K&#40;0x83E21C05&#41;
+A &#61; K&#40;0xCFABB6DD&#41;
+B &#61; 0xC4A21BA9
+
+a &#61; A.log&#40;g&#41;
+C &#61; pow&#40;B, a, p&#41;
+
+# now use it as shared secret
+hash &#61; sha256&#40;&#41;
+hash.update&#40;long_to_bytes&#40;C&#41;&#41;
+
+key &#61; hash.digest&#40;&#41;&#91;:16&#93;
+iv &#61; b&quot;\xc1V2\xe7\xed\xc7@8\xf9\\\xef\x80\xd7\x80L*&quot;
+cipher &#61; AES.new&#40;key, AES.MODE_CBC, iv&#41;
+
+decrypted &#61; cipher.decrypt&#40;ciphertext&#41;
+print&#40;decrypted&#41;</code></pre>
+<h3 id=flag__6 ><a href="#flag__6" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >HTB&#123;y0u_n3ed_a_b1gGeR_w3ap0n&#33;&#33;&#125;</code></pre>
+<h2 id=arranged ><a href="#arranged" class=header-anchor >Arranged</a></h2>
+<p>This challenge is similar to the previous challenge. Here we are given the public outputs to an elliptic curve Diffie-Hellman exchange.</p>
+<pre><code class=language-python >from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from Crypto.Util.number import long_to_bytes
+from hashlib import sha256
+
+from secret import FLAG, p, b, priv_a, priv_b
+
+F &#61; GF&#40;p&#41;
+E &#61; EllipticCurve&#40;F, &#91;726, b&#93;&#41;
+G &#61; E&#40;926644437000604217447316655857202297402572559368538978912888106419470011487878351667380679323664062362524967242819810112524880301882054682462685841995367, 4856802955780604241403155772782614224057462426619061437325274365157616489963087648882578621484232159439344263863246191729458550632500259702851115715803253&#41;
+
+A &#61; G * priv_a
+B &#61; G * priv_b
+
+print&#40;A&#41;
+print&#40;B&#41;
+
+C &#61; priv_a * B
+
+assert C &#61;&#61; priv_b * A
+
+# now use it as shared secret
+secret &#61; C&#91;0&#93;
+
+hash &#61; sha256&#40;&#41;
+hash.update&#40;long_to_bytes&#40;secret&#41;&#41;
+
+key &#61; hash.digest&#40;&#41;&#91;16:32&#93;
+iv &#61; b&#39;u\x8fo\x9aK\xc5\x17\xa7&gt;&#91;\x18\xa3\xc5\x11\x9en&#39;
+cipher &#61; AES.new&#40;key, AES.MODE_CBC, iv&#41;
+
+encrypted &#61; cipher.encrypt&#40;pad&#40;FLAG, 16&#41;&#41;
+print&#40;encrypted&#41;</code></pre>
+<p>The elliptic curve \(E\) is given by the Weierstrass equation </p>
+<div class=nonumber >\[
+y^2 = x^3 + 726x + b \pmod p
+\]</div>
+<p>where the parameters \(b\) and \(p\) are unknown. Fortunately we know three points \(A = (a_x, a_y), B = (b_x, b_y)\) and \(G = (g_x, g_y)\) which lie on the curve, so we know that at least over \(\mathbb{Z}\) the following equations hold</p>
+<div class=nonumber >\[\begin{aligned}
+a_y^2 &= a_x^3 + 726a_x + b + k_1p\\
+b_y^2 &= b_x^3 + 726b_x + b + k_2p\\
+g_y^2 &= g_x^3 + 726g_x + b + k_3p,\\
+\end{aligned}\]</div>
+<p>where \(k_1, k_2, k_3 \in \mathbb{Z}\). Observe that for \(i \neq j\) we have</p>
+<div class=nonumber >\[
+b+k_ip - b+k_jp = p(k_i - k_j),
+\]</div>
+<p>and so we have good chances at recovering \(p\) as</p>
+<div class=nonumber >\[
+\mathrm{gcd}\left(p(k_1 - k_2), p(k_2 - k_3), p(k_3 - k_1)\right).
+\]</div>
+<p>Once we know \(p\), then we can recover \(b\) as </p>
+<div class=nonumber >\[
+b = a_y^2 - a_x^3 - 726a_x \pmod p
+\]</div>
+<pre><code class=language-python >#&#33;/usr/bin/env sage
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from Crypto.Util.number import long_to_bytes
+from hashlib import sha256
+import itertools
+
+A &#61; &#40;
+    6174416269259286934151093673164493189253884617479643341333149124572806980379124586263533252636111274525178176274923169261099721987218035121599399265706997,
+    2456156841357590320251214761807569562271603953403894230401577941817844043774935363309919542532110972731996540328492565967313383895865130190496346350907696,
+&#41;
+B &#61; &#40;
+    4226762176873291628054959228555764767094892520498623417484902164747532571129516149589498324130156426781285021938363575037142149243496535991590582169062734,
+    425803237362195796450773819823046131597391930883675502922975433050925120921590881749610863732987162129269250945941632435026800264517318677407220354869865,
+&#41;
+G &#61; &#40;
+    926644437000604217447316655857202297402572559368538978912888106419470011487878351667380679323664062362524967242819810112524880301882054682462685841995367,
+    4856802955780604241403155772782614224057462426619061437325274365157616489963087648882578621484232159439344263863246191729458550632500259702851115715803253,
+&#41;
+ciphertext &#61; b&#39;V\x1b\xc6&amp;\x04Z\xb0c\xec\x1a\tn\xd9\xa6&#40;\xc1\xe1\xc5I\xf5\x1c\xd3\xa7\xdd\xa0\x84j\x9bob\x9d&quot;\xd8\xf7\x98?^\x9dA&#123;\xde\x08\x8f\x84i\xbf\x1f\xab&#39;
+
+b_k1p &#61; A&#91;1&#93;^2 - A&#91;0&#93;^3 - 726*A&#91;0&#93;
+b_k2p &#61; B&#91;1&#93;^2 - B&#91;0&#93;^3 - 726*B&#91;0&#93;
+b_k3p &#61; G&#91;1&#93;^2 - G&#91;0&#93;^3 - 726*G&#91;0&#93;
+
+samples &#61; &#91;&#93;
+for a, b in itertools.combinations&#40;&#91;b_k1p, b_k2p, b_k3p&#93;, 2&#41;:
+    samples.append&#40;b - a&#41;
+
+for a, b in itertools.combinations&#40;samples, 2&#41;:
+    print&#40;GCD&#40;a, b&#41;&#41;
+
+p &#61; GCD&#40;samples&#91;0&#93;, samples&#91;1&#93;&#41;
+
+F &#61; GF&#40;p&#41;
+b &#61; F&#40;A&#91;1&#93;&#41;^2 - F&#40;A&#91;0&#93;&#41;^3 - 726*F&#40;A&#91;0&#93;&#41;
+E &#61; EllipticCurve&#40;F, &#91;726, b&#93;&#41;</code></pre>
+<p>From here, we observe that the order of \(G\) in the elliptic curve group is very small &#40;only 11&#41;. Hence we can easily solve the discrete log problem to break the ECDH exchange.</p>
+<pre><code class=language-python >ciphertext &#61; b&#39;V\x1b\xc6&amp;\x04Z\xb0c\xec\x1a\tn\xd9\xa6&#40;\xc1\xe1\xc5I\xf5\x1c\xd3\xa7\xdd\xa0\x84j\x9bob\x9d&quot;\xd8\xf7\x98?^\x9dA&#123;\xde\x08\x8f\x84i\xbf\x1f\xab&#39;
+G &#61; E&#40;926644437000604217447316655857202297402572559368538978912888106419470011487878351667380679323664062362524967242819810112524880301882054682462685841995367, 4856802955780604241403155772782614224057462426619061437325274365157616489963087648882578621484232159439344263863246191729458550632500259702851115715803253&#41;
+n &#61; G.order&#40;&#41;                   # n &#61; 11
+A &#61; E&#40;A&#41;
+B &#61; E&#40;B&#41;
+priv_a &#61; discrete_log&#40;A, G, 11, operation&#61;&#39;&#43;&#39;&#41; # priv_a &#61; 4
+
+C &#61; B * priv_a
+# now use it as shared secret
+secret &#61; C&#91;0&#93;
+
+hash &#61; sha256&#40;&#41;
+hash.update&#40;long_to_bytes&#40;int&#40;secret&#41;&#41;&#41;
+
+key &#61; hash.digest&#40;&#41;&#91;16:32&#93;
+iv &#61; b&#39;u\x8fo\x9aK\xc5\x17\xa7&gt;&#91;\x18\xa3\xc5\x11\x9en&#39;
+cipher &#61; AES.new&#40;key, AES.MODE_CBC, iv&#41;
+
+decrypted &#61; cipher.decrypt&#40;ciphertext&#41;
+print&#40;decrypted&#41;</code></pre>
+<h3 id=flag__7 ><a href="#flag__7" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >HTB&#123;0rD3r_mUsT_b3_prEs3RveD_&#33;&#33;@&#33;&#125;</code></pre>
+<h2 id=partial_tenacity ><a href="#partial_tenacity" class=header-anchor >Partial Tenacity</a></h2>
+<p>In this challenge, we are tasked with recoving the factors \(p\), \(q\) of an RSA private key so that \(pq = n\). To assist us, we are provided with partial knowledge of \(p\) and \(q\), namely we know all the even-indexed digits of \(p\) in base 10, and all the odd-indexed digits of \(q\) in base 10.</p>
+<pre><code class=language-python >from secret import FLAG
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+
+
+class RSACipher:
+    def __init__&#40;self, bits&#41;:
+        self.key &#61; RSA.generate&#40;bits&#41;
+        self.cipher &#61; PKCS1_OAEP.new&#40;self.key&#41;
+
+    def encrypt&#40;self, m&#41;:
+        return self.cipher.encrypt&#40;m&#41;
+
+    def decrypt&#40;self, c&#41;:
+        return self.cipher.decrypt&#40;c&#41;
+
+
+enc_flag &#61; cipher.encrypt&#40;FLAG&#41;
+
+with open&#40;&quot;output.txt&quot;, &quot;w&quot;&#41; as f:
+    f.write&#40;f&quot;n &#61; &#123;cipher.key.n&#125;\n&quot;&#41;
+    f.write&#40;f&quot;ct &#61; &#123;enc_flag.hex&#40;&#41;&#125;\n&quot;&#41;
+    f.write&#40;f&quot;p &#61; &#123;str&#40;cipher.key.p&#41;&#91;::2&#93;&#125;\n&quot;&#41;
+    f.write&#40;f&quot;q &#61; &#123;str&#40;cipher.key.q&#41;&#91;1::2&#93;&#125;&quot;&#41;</code></pre>
+<p>This setup reminded me of one of those classic cryptarithmetic problems, which &#40;alongside <a href="http://aima.cs.berkeley.edu/newchap05.pdf">map colourings of Australia</a>&#41; is burned into my brain as a prototypical example of a constraint satisfaction problem.</p>
+<div class=invert_image ><img src=cryptarithm.png  alt="http://aima.cs.berkeley.edu/newchap05.pdf" /></div>
+<p>Because of this, I decided to attack this challenge using a constraint programming approach. </p>
+<p>We model each of the digits in \(p, q\) and \(n\) with integer variables \(P_i, Q_i, N_i\) where the subscript \(i\) is ordered in increasing order from least significant to most significant digits. If we know the exact value of a particular digit, then we impose a constraint that the digit takes on its known value. Otherwise we only constrain each variable to lie within the interval \([0, 9]\).</p>
+<p>The construction of the constraints follows the long multiplication pen and paper algorithm for multipling two numbers. Let \(T\) be a matrix of sufficient size which contains the tableau of intermediate digits normally produced during long multiplication. This matrix is indexed from top-right to bottom left, so that for example, the letters \(R, U, O, F\) in the above image have indices \((1,1)\), \((1, 2)\), \((1, 3)\), \((1, 4)\) respectively in \(T\).</p>
+<p>Assuming the multiplication proceeds with \(p\) above and \(q\) below, the multiplication phase of the algorithm begins with multiplying each digit of \(p\) with the least significant digit of \(q\). The result of this process forms the first row of the tableau. We then repeat the process, this time multiplying each digit of \(p\) with the second digit of \(q\) and writing the results of the multiplications into the second row, albeit shifted over by one space to the left.</p>
+<p>As an example, consider what happens during the multiplication of \(P_1\) and \(Q_1\). Since both are digits within 0 to 9, their product is bounded above by 81, and so we can write</p>
+<div class=nonumber >\[
+P_1 \cdot Q_1 = 10X + Y
+\]</div>
+<p>where \(X\) and \(Y\) are new integer variables bound between 0 and 9. The variable \(Y\) will be inserted into the tableau at position \((1, 1)\), and the variable \(X\) will be retained as the &quot;carry&quot; resulting from the multiplication of \(P_1\) and \(Q_1\). The next multiplication to take place is between \(P_2\) and \(Q_1\). Again, since \(P_2\) and \(Q_1\) are bounded above by 9, then \(P_2 \cdot Q_1\) is bounded above by 81 and so \(P_2 \cdot Q_1 + X\) is bounded above by 90. Hence we can write </p>
+<div class=nonumber >\[
+P_2 \cdot Q_1 + X = 10X' + Y'
+\]</div>
+<p>where \(X',Y'\) are once again integer variables representing digits from 0 to 9. Like before, \(Y'\) is written into the tableau at position \((1, 2)\), and \(X'\) is retained as the carry resulting from the multiplication. Once we reach the last multiplication on this row, the carry is not retained, and is instead written into the tableau at the leftmost position of the row.</p>
+<p>Repeating the above process, we finish the multiplication phase of the algorithm and now have a completed tableau. Now we move onto the addition phase, where we sum up each column, and impose a constraint that the least  significant digit of the sum must match the corresponding digit in \(n\). For example, in the sum of the right-most tableau column, we have</p>
+<div class=nonumber >\[
+\sum_{j}T[1, j] = 10X'' + Y''.
+\]</div>
+<p>This time, both \(X''\) and \(Y''\) are integral, but we require only \(Y''\) to be a base-10 digit since the carry resulting from addition could be greater than 9. We impose the constraint that \(Y'' = N_1\), and retain \(X''\) as the carry resulting from additon of the first tableau column. Repeating the above process for each column, we complete the long multiplication algorithm and have specified all the required constraints to model \(pq = n\) in base-10 arithmetic.</p>
+<p>Below is an implementation of the above model, using Julia&#39;s interface to the <a href="https://www.minizinc.org">MiniZinc modelling language</a> and  <a href="https://github.com/chuffed/chuffed">chuffed</a> as the backend solver.</p>
+<pre><code class=language-julia >import MiniZinc
+import MathOptInterface as MOI
+
+const N &#61;
+  118641897764566817417551054135914458085151243893181692085585606712347004549784923154978949512746946759125187896834583143236980760760749398862405478042140850200893707709475167551056980474794729592748211827841494511437980466936302569013868048998752111754493558258605042130232239629213049847684412075111663446003
+const P &#61; 151441473357136152985216980397525591305875094288738820699069271674022167902643
+
+const Q &#61; 15624342005774166525024608067426557093567392652723175301615422384508274269305
+
+
+function add_digit_constraints&#40;model, digits, variables&#41;
+  for &#40;i, digit&#41; in enumerate&#40;digits&#41;
+    if digit &#61;&#61;&#61; :unknown     # unknown digit, add interval constraint
+      MOI.add_constraint&#40;model, variables&#91;i&#93;, MOI.Interval&#40;0, 9&#41;&#41;
+    else                      # known digit, tell model explicitly
+      MOI.add_constraint&#40;model, variables&#91;i&#93;, MOI.EqualTo&#40;digit&#41;&#41;
+    end
+  end
+end
+
+function solve_using_carry&#40;P, Q, N&#41;
+  model &#61; MOI.Utilities.CachingOptimizer&#40;
+    MiniZinc.Model&#123;Int&#125;&#40;&#41;,
+    MiniZinc.Optimizer&#123;Int&#125;&#40;&quot;chuffed&quot;&#41;,
+  &#41;
+  p &#61; MOI.add_variables&#40;model, length&#40;P&#41;&#41;
+
+  q &#61; MOI.add_variables&#40;model, length&#40;Q&#41;&#41;
+
+  MOI.add_constraint.&#40;model, p, MOI.Integer&#40;&#41;&#41;
+  MOI.add_constraint.&#40;model, q, MOI.Integer&#40;&#41;&#41;
+
+  add_digit_constraints&#40;model, P, p&#41;
+  add_digit_constraints&#40;model, Q, q&#41;
+
+  target &#61; digits&#40;N&#41;
+
+  tableau &#61; Matrix&#123;Any&#125;&#40;zeros&#40;Int64, &#40;length&#40;p&#41; &#43; length&#40;q&#41;, length&#40;p&#41; &#43; length&#40;q&#41;&#41;&#41;&#41;
+  for q_index &#61; 1:length&#40;q&#41;
+    for p_index &#61; 1:length&#40;p&#41;
+      x, y &#61; MOI.add_variables&#40;model, 2&#41;
+      MOI.add_constraint.&#40;model, x, MOI.Integer&#40;&#41;&#41;
+      MOI.add_constraint&#40;model, x, MOI.Interval&#40;0, 9&#41;&#41;
+      MOI.add_constraint.&#40;model, y, MOI.Integer&#40;&#41;&#41;
+      MOI.add_constraint&#40;model, y, MOI.Interval&#40;0, 9&#41;&#41;
+
+      # p&#91;i&#93; * q&#91;j&#93; &#43; carry&#91;i, j&#93; &#61; 10x &#43; y
+      MOI.add_constraint&#40;
+        model,
+        1 * p&#91;p_index&#93; * q&#91;q_index&#93; &#43; tableau&#91;q_index, p_index&#43;q_index-1&#93; - 10 * x - y,
+        MOI.EqualTo&#40;0&#41;,
+      &#41;
+      tableau&#91;q_index, p_index&#43;q_index-1&#93; &#61; y # significand
+      tableau&#91;q_index, p_index&#43;q_index&#93; &#61; x # carry
+    end
+  end
+
+  carry &#61; 0
+  for &#40;col, target_digit&#41; in zip&#40;eachcol&#40;tableau&#41;, target&#41;
+    col_sum &#61; sum&#40;col; init &#61; 0&#41;
+    x, y &#61; MOI.add_variables&#40;model, 2&#41;
+    MOI.add_constraint.&#40;model, x, MOI.Integer&#40;&#41;&#41; # x does not have to be within 0-9
+    MOI.add_constraint.&#40;model, y, MOI.Integer&#40;&#41;&#41;
+    MOI.add_constraint&#40;model, y, MOI.Interval&#40;0, 9&#41;&#41;
+
+    # sum&#40;column&#41; &#43; carry &#61; 10x &#43; y
+    MOI.add_constraint&#40;model, 1 * col_sum &#43; carry - 10 * x - y, MOI.EqualTo&#40;0&#41;&#41;
+    # y &#61; target_digit
+    MOI.add_constraint&#40;model, 1 * y - target_digit, MOI.EqualTo&#40;0&#41;&#41;
+    carry &#61; x
+  end
+
+  MOI.optimize&#33;&#40;model&#41;
+  p_star &#61; MOI.get&#40;model, MOI.VariablePrimal&#40;&#41;, p&#41;
+  q_star &#61; MOI.get&#40;model, MOI.VariablePrimal&#40;&#41;, q&#41;
+
+  p &#61; evalpoly&#40;big&#40;10&#41;, p_star&#41;
+  q &#61; evalpoly&#40;big&#40;10&#41;, q_star&#41;
+
+  @show p * q &#61;&#61; N
+
+  return p, q
+end
+
+
+function solve&#40;&#41;
+  p &#61; digits&#40;P&#41;
+  q &#61; digits&#40;Q&#41;
+
+  p_original &#61; reduce&#40;vcat, &#40;&#91;d, :unknown&#93; for d in reverse&#40;p&#41;&#41;&#41;&#91;1:end-1&#93;
+  q_original &#61; reduce&#40;vcat, &#40;&#91;:unknown, d&#93; for d in reverse&#40;q&#41;&#41;&#41;
+  push&#33;&#40;q_original, :unknown&#41;
+
+  @show length&#40;p_original&#41;
+  @show length&#40;q_original&#41;
+  p_original &#61; reverse&#40;p_original&#41;
+  q_original &#61; reverse&#40;q_original&#41;
+
+  @show p_original
+  @show q_original
+
+  p, q &#61; solve_using_carry&#40;p_original, q_original, N&#41;
+
+  # p &#61; 10541549431842783633587614316112542499895727166990860537947158205451961334065983715903944224868775308489240169949600619123741969714205272515647199022167453
+  # q &#61; 11254692541324720060752707148186767582750062945630785066774422168535575089335596479399029695524722638167959390210621853422825328846580189277644256392390351
+end</code></pre>
+<p>From here, we know both \(p\) and \(q\), and so we can reconstruct the RSA private key and decrypt the flag.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env sage
+
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Util.number import *
+from Crypto.PublicKey.RSA import RsaKey
+
+n &#61; 118641897764566817417551054135914458085151243893181692085585606712347004549784923154978949512746946759125187896834583143236980760760749398862405478042140850200893707709475167551056980474794729592748211827841494511437980466936302569013868048998752111754493558258605042130232239629213049847684412075111663446003
+ct &#61; bytes.fromhex&#40;
+    &quot;7f33a035c6390508cee1d0277f4712bf01a01a46677233f16387fae072d07bdee4f535b0bd66efa4f2475dc8515696cbc4bc2280c20c93726212695d770b0a8295e2bacbd6b59487b329cc36a5516567b948fed368bf02c50a39e6549312dc6badfef84d4e30494e9ef0a47bd97305639c875b16306fcd91146d3d126c1ea476&quot;
+&#41;
+
+# Found using solve.jl
+p &#61; 10541549431842783633587614316112542499895727166990860537947158205451961334065983715903944224868775308489240169949600619123741969714205272515647199022167453
+q &#61; 11254692541324720060752707148186767582750062945630785066774422168535575089335596479399029695524722638167959390210621853422825328846580189277644256392390351
+
+e &#61; 65537
+d &#61; inverse_mod&#40;e, lcm&#40;p - 1, q - 1&#41;&#41;
+key &#61; RSA.construct&#40;&#40;int&#40;n&#41;, int&#40;e&#41;, int&#40;d&#41;, int&#40;p&#41;, int&#40;q&#41;, int&#40;inverse_mod&#40;p, q&#41;&#41;&#41;&#41;
+
+
+class RSACipher:
+    def __init__&#40;self, key&#41;:
+        self.key &#61; key
+        self.cipher &#61; PKCS1_OAEP.new&#40;self.key&#41;
+
+    def encrypt&#40;self, m&#41;:
+        return self.cipher.encrypt&#40;m&#41;
+
+    def decrypt&#40;self, c&#41;:
+        return self.cipher.decrypt&#40;c&#41;
+
+
+cipher &#61; RSACipher&#40;key&#41;
+pt &#61; cipher.decrypt&#40;ct&#41;</code></pre>
+<pre><code class=language-flag >HTB&#123;v3r1fy1ng_pr1m3s_m0dul0_p0w3rs_0f_10&#33;&#125;</code></pre>
+<h2 id=permuted ><a href="#permuted" class=header-anchor >Permuted</a></h2>
+<p>We have another Diffie-Hellman challenge, this time over the symmetric group \(S_n\) for \(n = 50,000\).</p>
+<pre><code class=language-python >from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from Crypto.Util.number import long_to_bytes
+
+from hashlib import sha256
+from random import shuffle
+
+from secret import a, b, FLAG
+
+class Permutation:
+    def __init__&#40;self, mapping&#41;:
+        self.length &#61; len&#40;mapping&#41;
+
+        assert set&#40;mapping&#41; &#61;&#61; set&#40;range&#40;self.length&#41;&#41;     # ensure it contains all numbers from 0 to length-1, with no repetitions
+        self.mapping &#61; list&#40;mapping&#41;
+
+    def __call__&#40;self, *args, **kwargs&#41;:
+        idx, *_ &#61; args
+        assert idx in range&#40;self.length&#41;
+        return self.mapping&#91;idx&#93;
+
+    def __mul__&#40;self, other&#41;:
+        ans &#61; &#91;&#93;
+
+        for i in range&#40;self.length&#41;:
+            ans.append&#40;self&#40;other&#40;i&#41;&#41;&#41;
+
+        return Permutation&#40;ans&#41;
+
+    def __pow__&#40;self, power, modulo&#61;None&#41;:
+        ans &#61; Permutation.identity&#40;self.length&#41;
+        ctr &#61; self
+
+        while power &gt; 0:
+            if power &#37; 2 &#61;&#61; 1:
+                ans *&#61; ctr
+            ctr *&#61; ctr
+            power //&#61; 2
+
+        return ans
+
+    def __str__&#40;self&#41;:
+        return str&#40;self.mapping&#41;
+
+    def identity&#40;length&#41;:
+        return Permutation&#40;range&#40;length&#41;&#41;
+
+
+x &#61; list&#40;range&#40;50_000&#41;&#41;
+shuffle&#40;x&#41;
+
+g &#61; Permutation&#40;x&#41;
+print&#40;&#39;g &#61;&#39;, g&#41;
+
+A &#61; g**a
+print&#40;&#39;A &#61;&#39;, A&#41;
+B &#61; g**b
+print&#40;&#39;B &#61;&#39;, B&#41;
+
+C &#61; A**b
+assert C.mapping &#61;&#61; &#40;B**a&#41;.mapping
+
+sec &#61; tuple&#40;C.mapping&#41;
+sec &#61; hash&#40;sec&#41;
+sec &#61; long_to_bytes&#40;sec&#41;
+
+hash &#61; sha256&#40;&#41;
+hash.update&#40;sec&#41;
+
+key &#61; hash.digest&#40;&#41;&#91;16:32&#93;
+iv &#61; b&quot;mg&#39;g\xce\x08\xdbYN2\x89\xad\xedlY\xb9&quot;
+
+cipher &#61; AES.new&#40;key, AES.MODE_CBC, iv&#41;
+
+encrypted &#61; cipher.encrypt&#40;pad&#40;FLAG, 16&#41;&#41;
+print&#40;&#39;c &#61;&#39;, encrypted&#41;</code></pre>
+<p>Rather than working with the <code>Permutation</code> class provided by the challenge, we will use the <code>make_permgroup_element_v2</code> function of SageMath to convert the group elements into Sage&#39;s native representation. This way we will have access to the full suite of SageMath&#39;s algebraic functionality when solving this challenge.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env sage
+
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+from Crypto.Util.number import long_to_bytes
+
+from hashlib import sha256
+from random import shuffle
+
+from sage.groups.perm_gps.permgroup_element import make_permgroup_element_v2
+
+# Pasting output.txt into the script crashes emacs :&lt;
+exec&#40;compile&#40;open&#40;&quot;output.txt&quot;&#41;.read&#40;&#41;, &quot;output.py&quot;, &quot;exec&quot;&#41;&#41;
+
+# Convert g into SageMath representation
+S &#61; SymmetricGroup&#40;range&#40;50_000&#41;&#41;
+g &#61; make_permgroup_element_v2&#40;S, g, S.domain&#40;&#41;&#41;</code></pre>
+<p>From here, <code>g.order&#40;&#41;</code> reveals to us the order of the generator. Looking the order up on <code>factordb</code>, we find that it admits a very smooth factorisation</p>
+<div class=nonumber >\[
+2^2 \cdot 3^3 \cdot 5^2 \cdot 7 \cdot 11 \cdot 13 \cdot 23^2 \cdot 47 \cdot 53 \cdot 101 \cdot 149 \cdot 163 \cdot 379,
+\]</div>
+<p>so we can expect the Pohlig-Hellman algorithm to perform well here.</p>
+<pre><code class=language-python >n &#61; g.order&#40;&#41;  # 3311019189498977856900 
+A &#61; make_permgroup_element_v2&#40;S, A, S.domain&#40;&#41;&#41;
+a &#61; discrete_log&#40;A, g, n, operation&#61;&quot;*&quot;&#41;  # 839949590738986464
+
+B &#61; Permutation&#40;B&#41;
+C &#61; B**a
+sec &#61; tuple&#40;C.mapping&#41;
+sec &#61; hash&#40;sec&#41;
+sec &#61; long_to_bytes&#40;sec&#41;
+
+hash &#61; sha256&#40;&#41;
+hash.update&#40;sec&#41;
+key &#61; hash.digest&#40;&#41;&#91;16:32&#93;
+iv &#61; b&quot;mg&#39;g\xce\x08\xdbYN2\x89\xad\xedlY\xb9&quot;
+
+cipher &#61; AES.new&#40;key, AES.MODE_CBC, iv&#41;
+decrypted &#61; cipher.decrypt&#40;c&#41;
+print&#40;decrypted&#41;</code></pre>
+<h3 id=flag__8 ><a href="#flag__8" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >HTB&#123;w3lL_n0T_aLl_gRoUpS_aRe_eQUaL_&#33;&#33;&#125;</code></pre>
+<h2 id=tsayaki ><a href="#tsayaki" class=header-anchor >Tsayaki</a></h2>
+<p>This challenge asks us to return to the TEA cipher from the <a href="/wednesday/ctf/htbroyale24/#iced_tea">Iced TEA</a> challenge above and to answer the following challenge: given a fixed plaintext \(P\), produce 4 keys such that the encryption of \(P\) under each of the keys results in the same ciphertext. To prove that we did not just get lucky, we must repeat the process across 10 rounds with different ciphertexts and key quadruplets.</p>
+<pre><code class=language-python >from tea import Cipher as TEA
+from secret import IV, FLAG
+import os
+
+ROUNDS &#61; 10
+
+def show_menu&#40;&#41;:
+    print&#40;&quot;&quot;&quot;
+&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;
+|| I made this decryption oracle in which I let users choose their own decryption keys.   ||
+|| I think that it&#39;s secure as the tea cipher doesn&#39;t produce collisions &#40;?&#41; ... Right?   ||
+|| If you manage to prove me wrong 10 times, you get a special gift.                      ||
+&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;
+&quot;&quot;&quot;&#41;
+
+def run&#40;&#41;:
+    show_menu&#40;&#41;
+
+    server_message &#61; os.urandom&#40;20&#41;
+    print&#40;f&#39;Here is my special message: &#123;server_message.hex&#40;&#41;&#125;&#39;&#41;
+    
+    used_keys &#61; &#91;&#93;
+    ciphertexts &#61; &#91;&#93;
+    for i in range&#40;ROUNDS&#41;:
+        print&#40;f&#39;Round &#123;i&#43;1&#125;/10&#39;&#41;
+        try:
+            ct &#61; bytes.fromhex&#40;input&#40;&#39;Enter your target ciphertext &#40;in hex&#41; : &#39;&#41;&#41;
+            assert ct not in ciphertexts
+
+            for j in range&#40;4&#41;:
+                key &#61; bytes.fromhex&#40;input&#40;f&#39;&#91;&#123;i&#43;1&#125;/&#123;j&#43;1&#125;&#93; Enter your encryption key &#40;in hex&#41; : &#39;&#41;&#41;
+                assert len&#40;key&#41; &#61;&#61; 16 and key not in used_keys
+                used_keys.append&#40;key&#41;
+                cipher &#61; TEA&#40;key, IV&#41;
+                enc &#61; cipher.encrypt&#40;server_message&#41;
+                if enc &#33;&#61; ct:
+                    print&#40;f&#39;Hmm ... close enough, but &#123;enc.hex&#40;&#41;&#125; does not look like &#123;ct.hex&#40;&#41;&#125; at all&#33; Bye...&#39;&#41;
+                    exit&#40;&#41;
+        except:
+            print&#40;&#39;Nope.&#39;&#41;
+            exit&#40;&#41;
+            
+        ciphertexts.append&#40;ct&#41;
+
+    print&#40;f&#39;Wait, really? &#123;FLAG&#125;&#39;&#41;
+
+
+if __name__ &#61;&#61; &#39;__main__&#39;:
+    run&#40;&#41;</code></pre>
+<p>Researching the TEA cipher on Wikipedia, I was led to a paper by <a href="https://web.archive.org/web/20120208081900/http://www.schneier.com/paper-key-schedule.pdf">Kelsey, Schneier and Wagner</a> which mentions a key equivalence vulnerability in TEA. In particular, the round function \(F\) in the \(i\)-th round of the encryption is given by</p>
+<div class=nonumber >\[
+F_i(z, k, k') = (\mathrm{ShiftLeft}(z, 4) + k) \oplus (z + C_i) \oplus (\mathrm{ShiftRight}(z, 5) + k')
+\]</div>
+<p>where:</p>
+<ul>
+<li><p>\(z\) is the 4-byte block the round function is being applied to &#40;<code>m0</code> or <code>m1</code> in the challenge source code&#41;,</p>
+
+<li><p>\(C_i\) is a counter &#40;<code>s</code> in the challenge source code&#41; </p>
+
+<li><p>\(k, k'\) are the high 4-bytes and low 4-bytes of the key material being applied in that round &#40;<code>K&#91;0&#93;, K&#91;1&#93;</code>, or <code>K&#91;2&#93;, K&#91;3&#93;</code> in the challenge source code&#41;</p>
+
+</ul>
+<p>Observe that if the most significant bits of \(k\) and \(k'\) were flipped, then since bit-flips to the MSB are preserved under addition, both the \((\mathrm{ShiftLeft}(z, 4) + k)\) and the \((\mathrm{ShiftRight}(z, 5) + k')\) terms would experience a single bit flip in their most significant bit. When they get XOR&#39;d together, this bit-flip cancels out, and so the round function with respect to the altered keys is identical to the round function with respect to the original keys. Hence, given a key \(K\) made up of four 4-byte words \(K = K_1\Vert K_2\Vert K_3\Vert K_4\), the following keys</p>
+<ul>
+<li><p>\(K_1 \Vert K_2 \Vert K_3 \Vert K_4\)</p>
+
+<li><p>\(\mathrm{FlipMSB}(K_1) \Vert \mathrm{FlipMSB}(K_2) \Vert K_3 \Vert K_4\)</p>
+
+<li><p>\(K_1 \Vert K_2 \Vert \mathrm{FlipMSB}(K_3) \Vert \mathrm{FlipMSB}(K_4)\)</p>
+
+<li><p>\(\mathrm{FlipMSB}(K_1) \Vert \mathrm{FlipMSB}(K_2) \Vert \mathrm{FlipMSB}(K_3) \Vert \mathrm{FlipMSB}(K_4)\)</p>
+
+</ul>
+<p>all provide identical encryption action under TEA.</p>
+<p>With the above in place, the only remaining matter is to recover the server&#39;s hidden IV. For this, we can open a connection manually and ask to server to perform an encryption using a key we control. Then, since we have a known plaintext-ciphertext pair as well as the encryption key, we can recover the IV as follows.</p>
+<pre><code class=language-python >def solve_iv&#40;&#41;:
+    # These pairs were gathered using a single nc session
+    known_pt &#61; bytes.fromhex&#40;&quot;63639d6b61ffdf9b3bc47d8999bd5cf70e0960ac&quot;&#41;
+    known_ct &#61; bytes.fromhex&#40;&quot;66f1e6cf63d27703e53ca003703542d222d6e5d6a3bbe10c&quot;&#41;
+    known_key &#61; bytes.fromhex&#40;&quot;14141414141414141414141414141414&quot;&#41;
+    cipher &#61; Cipher&#40;known_key&#41;
+    first_block &#61; known_ct&#91;:8&#93;
+    after_block &#61; cipher.decrypt&#40;first_block&#41;
+    first_block_pt &#61; known_pt&#91;:8&#93;
+
+    # first_block_pt &#61; after_blcok &#43; IV
+    # Iv &#61; first_block_pt &#43; after_block
+    IV &#61; cipher._xor&#40;first_block_pt, after_block&#41;
+    # iv &#61; 0dddd2773cf4b908
+
+    cipher_with_iv &#61; Cipher&#40;known_key, IV&#41;
+    cipher_with_iv_ct &#61; cipher_with_iv.encrypt&#40;known_pt&#41;.hex&#40;&#41;
+
+    assert cipher_with_iv_ct &#61;&#61; known_ct.hex&#40;&#41;
+    return IV</code></pre>
+<p>Once we know the IV, we can use the above vulnerability to answer the server&#39;s challenge and obtain the flag.</p>
+<pre><code class=language-python ># For a definition of the &#96;Cipher&#96; class with decryption methods implemented, 
+# see the writeup for the Iced TEA challenge above.
+
+def solve&#40;&#41;:
+    IV &#61; solve_iv&#40;&#41;
+
+    conn &#61; connect&#40;&quot;94.237.49.14&quot;, 56033&#41;
+    for i in range&#40;7&#41;:
+        print&#40;conn.recvline&#40;&#41;&#41;
+
+    server_msg_line &#61; conn.recvline&#40;&#41;.decode&#40;&quot;ascii&quot;&#41;
+    server_msg &#61; re.compile&#40;r&quot;Here is my special message: &#40;.*&#41;&quot;&#41;.search&#40;server_msg_line&#41;.group&#40;1&#41;
+
+    plaintext &#61; bytes.fromhex&#40;server_msg&#41;
+
+    # Flip MSB of K&#91;1&#93; K&#91;2&#93;
+    msb_flipper &#61; &#40;b&quot;\x80&quot; &#43; b&quot;\x00&quot; * 3&#41; * 2
+    identity &#61; b&quot;\x00&quot; * 8
+    for i in range&#40;100&#41;:  # NROUNDS
+        key1 &#61; b&quot;&quot;.join&#40;l2b&#40;i, 4&#41; for _ in range&#40;4&#41;&#41;
+        key2 &#61; xor_bytes&#40;key1, msb_flipper &#43; identity&#41;  # flip first MSB pair
+        key3 &#61; xor_bytes&#40;key1, identity &#43; msb_flipper&#41;  # flip second MSB pair
+        key4 &#61; xor_bytes&#40;key1, msb_flipper &#43; msb_flipper&#41;  # flip third MSB pair
+
+        keys &#61; &#91;key1, key2, key3, key4&#93;
+        ciphers &#61; &#91;Cipher&#40;key, IV&#41; for key in keys&#93;
+        cts &#61; &#91;cipher.encrypt&#40;plaintext&#41; for cipher in ciphers&#93;
+
+        assert len&#40;set&#40;cts&#41;&#41; &#61;&#61; 1  # all cts are the same
+
+        print&#40;conn.recvline&#40;&#41;&#41;  # ROUND &#91;x/x&#93;
+        conn.sendline&#40;cts&#91;0&#93;.hex&#40;&#41;&#41;
+
+        for key in keys:
+            conn.sendline&#40;key.hex&#40;&#41;&#41;
+
+    conn.close&#40;&#41;</code></pre>
+<h3 id=flag__9 ><a href="#flag__9" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >HTB&#123;th1s_4tt4ck_m4k3s_T34_1n4ppr0pr14t3_f0r_h4sh1ng&#33;&#125;</code></pre>
+<h2 id=rot128 ><a href="#rot128" class=header-anchor >ROT128</a></h2>
+<p>In this challenge, we are given the implementation for a hash function \(H\), and to obtain the flag we must correctly answer 3 rounds of challenges. In each round, the server will randomise the state \(S\) of the hash function, and provide us with a pair \(P\), \(C\) such that \(H(S, P) = C\). Our task is to recover the value of the state \(S\), with the restriction that recoveries must be made within two seconds, and certain edge cases are prohibited.</p>
+<pre><code class=language-python >import random, os, signal
+from Crypto.Util.number import long_to_bytes as l2b, bytes_to_long as b2l
+from secret import FLAG
+
+ROUNDS &#61; 3
+USED_STATES &#61; &#91;&#93;
+_ROL_ &#61; lambda x, i : &#40;&#40;x &lt;&lt; i&#41; | &#40;x &gt;&gt; &#40;N-i&#41;&#41;&#41; &amp; &#40;2**N - 1&#41;
+N &#61; 128
+
+def handler&#40;signum, frame&#41;:
+    print&#40;&quot;\n\nToo slow, don&#39;t try to do sneaky things.&quot;&#41;
+    exit&#40;&#41;
+
+def validate_state&#40;state&#41;:
+    if not all&#40;0 &lt; s &lt; 2**N-1 for s in user_state&#91;-2:&#93;&#41; or not all&#40;0 &lt;&#61; s &lt; N for s in user_state&#91;:4&#93;&#41;:
+        print&#40;&#39;Please, make sure your input satisfies the upper and lower bounds.&#39;&#41;
+        return False
+    
+    if sorted&#40;state&#91;:4&#93;&#41; in USED_STATES:
+        print&#40;&#39;You cannot reuse the same state&#39;&#41;
+        return False
+    
+    if sum&#40;user_state&#91;:4&#93;&#41; &lt; 2:
+        print&#40;&#39;We have to deal with some edge cases...&#39;&#41;
+        return False
+
+    return True
+
+class HashRoll:
+    def __init__&#40;self&#41;:
+        self.reset_state&#40;&#41;
+
+    def hash_step&#40;self, i&#41;:
+        r1, r2 &#61; self.state&#91;2*i&#93;, self.state&#91;2*i&#43;1&#93;
+        return _ROL_&#40;self.state&#91;-2&#93;, r1&#41; ^ _ROL_&#40;self.state&#91;-1&#93;, r2&#41;
+
+    def update_state&#40;self, state&#61;None&#41;:
+        if not state:
+            self.state &#61; &#91;0&#93; * 6
+            self.state&#91;:4&#93; &#61; &#91;random.randint&#40;0, N&#41; for _ in range&#40;4&#41;&#93;
+            self.state&#91;-2:&#93; &#61; &#91;random.randint&#40;0, 2**N&#41; for _ in range&#40;2&#41;&#93;
+        else:
+            self.state &#61; state
+    
+    def reset_state&#40;self&#41;:
+        self.update_state&#40;&#41;
+
+    def digest&#40;self, buffer&#41;:
+        buffer &#61; int.from_bytes&#40;buffer, byteorder&#61;&#39;big&#39;&#41;
+        m1 &#61; buffer &gt;&gt; N
+        m2 &#61; buffer &amp; &#40;2**N - 1&#41;
+        self.h &#61; b&#39;&#39;
+        for i in range&#40;2&#41;:
+            self.h &#43;&#61; int.to_bytes&#40;self.hash_step&#40;i&#41; ^ &#40;m1 if not i else m2&#41;, length&#61;N//8, byteorder&#61;&#39;big&#39;&#41;
+        return self.h
+
+
+print&#40;&#39;Can you test my hash function for second preimage resistance? You get to select the state and I get to choose the message ... Good luck&#33;&#39;&#41;
+
+hashfunc &#61; HashRoll&#40;&#41;
+
+for _ in range&#40;ROUNDS&#41;:
+    print&#40;f&#39;ROUND &#123;_&#43;1&#125;/&#123;ROUNDS&#125;&#33;&#39;&#41;
+
+    server_msg &#61; os.urandom&#40;32&#41;
+    hashfunc.reset_state&#40;&#41;
+    server_hash &#61; hashfunc.digest&#40;server_msg&#41;
+    print&#40;f&#39;You know H&#40;&#123;server_msg.hex&#40;&#41;&#125;&#41; &#61; &#123;server_hash.hex&#40;&#41;&#125;&#39;&#41;
+
+    signal.signal&#40;signal.SIGALRM, handler&#41;
+    signal.alarm&#40;2&#41;
+
+    user_state &#61; input&#40;&#39;Send your hash function state &#40;format: a,b,c,d,e,f&#41; :: &#39;&#41;.split&#40;&#39;,&#39;&#41;
+
+    try:
+        user_state &#61; list&#40;map&#40;int, user_state&#41;&#41;
+
+        if not validate_state&#40;user_state&#41;:
+            print&#40;&quot;The state is not valid&#33; Try again.&quot;&#41;
+            exit&#40;&#41;
+
+        hashfunc.update_state&#40;user_state&#41;
+
+        if hashfunc.digest&#40;server_msg&#41; &#61;&#61; server_hash:
+            print&#40;f&#39;Moving on to the next round&#33;&#39;&#41;
+            USED_STATES.append&#40;sorted&#40;user_state&#91;:4&#93;&#41;&#41;
+        else:
+            print&#40;&#39;Not today.&#39;&#41;
+            exit&#40;&#41;
+    except:
+        print&#40;&quot;The hash function&#39;s state must be all integers.&quot;&#41;
+        exit&#40;&#41;
+    finally:
+       signal.alarm&#40;0&#41;
+
+print&#40;f&#39;Uhm... how did you do that? I thought I had cryptanalyzed it enough ... &#123;FLAG&#125;&#39;&#41;</code></pre>
+<p>Looking closer at the implementation, we see that the hash function operates by using the state \(S\) to produce a 32-byte bitmask. The original message is then XOR&#39;d with this bitmask to produce the hashed value</p>
+<div class=nonumber >\[
+H(S, P) = P \oplus \mathrm{HStep}(S).
+\]</div>
+<p>The state \(S\) consists of six values, so write let us \(S = [a, b, c, d, A, B]\). Then we can write \(\mathrm{HStep}(S)\) as the concatentation</p>
+<div class=nonumber >\[
+\mathrm{HStepHi}(S) \Vert \mathrm{HStepLo}(S)
+\]</div>
+<p>where </p>
+<a id=eq1  class=anchor ></a>\[\begin{aligned}
+\mathrm{HStepHi}(S) &= \mathrm{RotateLeft}(A, a) \oplus \mathrm{RotateLeft}(B, b)\\
+\mathrm{HStepLo}(S) &= \mathrm{RotateLeft}(A, c) \oplus \mathrm{RotateLeft}(B, d).
+\end{aligned}\]
+<p>In our case, both \(\mathrm{HStepHi}(S)\) and \(\mathrm{HStepLo}(S)\) are known, and so all that remains is to find a state \(S = [a, b, c, d, A, B]\) such that the two equations above hold.</p>
+<p>When solving this challenge, the presence of 128-bit values, XOR&#39;s and shifts reminded me of <a href="https://en.wikipedia.org/wiki/Galois/Counter_Mode">Galois/Counter Mode</a>, where the authentication tag is calculated using a combination of shifts and XOR&#39;s that represent arithmetic in the field \(\mathbb{F}_{2^{128}}\). We can apply a similar idea here too, since the circular shifts and XOR&#39;s of the hash function can be represented by operations in the quotient ring</p>
+<div class=nonumber >\[
+R = \frac{\mathbb{F}_2[x]}{(x^{128} + 1)}.
+\]</div>
+<p>The elements of \(R\) are the remainders after Euclidean division of polynomials in \(\mathbb{F}_2[x]\). Such a remainder will have the form</p>
+<div class=nonumber >\[
+a_0 + a_1x + a_2x^2 + \cdots + a_{127}x^{127}
+\]</div>
+<p>where each \(a_i\) is in \(\{0, 1\}\). Hence we can represent 128-bit numbers as polynomials in \(R\), by having each \(a_i\) correspond to a single bit. In our case, we will choose the correspondence to occur in a big-endian manner, so that the polynomial shown above represents the number \(a_{127}a_{126}\ldots a_1a_0\). </p>
+<p>In \(R\), the operation of XOR is represented by addition, and the operation of left circular shift is represented by multiplication by \(x\). In particular, we have</p>
+<div class=nonumber >\[
+x^{127} x = x^{128} = (x^{128} + 1) + 1 = 1,
+\]</div>
+<p>so overflows are handled naturally. With the above setup in place, we can now rewrite <span class=eqref >(<a href="#eq1">1</a>)</span> over \(R\) as   </p>
+<div class=nonumber >\[\begin{aligned}
+    H_1 &= Ax^a + Bx^b\\
+    H_2 &= Ax^c + Bx^d.
+\end{aligned}\]</div>
+<p>Given fixed values of \(x^a, x^b, x^c, x^d\), this becomes a system of linear equations over a principal ideal domain, and we can solve for the corresponding \(A\) and \(B\) using the Hermite normal form. </p>
+<p>Below is an implementation of the above solution in Julia using the <a href="https://www.oscar-system.org/">Oscar Computer Algebra System</a></p>
+<pre><code class=language-julia >using Sockets
+using Oscar
+
+F &#61; GF&#40;2&#41;
+Fu, u &#61; polynomial_ring&#40;F, &quot;u&quot;&#41; # &#40;Univariate polynomial ring in u over GF&#40;2&#41;, u&#41;
+R, f &#61; quo&#40;Fu, u^128 &#43; 1&#41;       # &#40;Residue ring of univariate polynomial ring modulo u^128 &#43; 1, Map: univariate polynomial ring -&gt; residue ring&#41;
+x &#61; f&#40;u&#41;
+
+function leftpad&#40;v::AbstractVector&#123;UInt8&#125;, target&#41;
+  @assert length&#40;v&#41; &lt;&#61; target
+  topad &#61; zeros&#40;UInt8, target - length&#40;v&#41;&#41;
+  &#91;topad; v&#93;
+end
+
+function to_ring&#40;v::AbstractVector&#123;UInt8&#125;&#41;
+  v &#61; leftpad&#40;v, 16&#41;
+  integer &#61; parse&#40;BigInt, bytes2hex&#40;v&#41;, base &#61; 16&#41;
+  res &#61; zero&#40;R&#41;
+  for &#40;i, dig&#41; in enumerate&#40;digits&#40;integer, base &#61; 2&#41;&#41;
+    if dig &#61;&#61; 1
+      res &#43;&#61; x^&#40;i - 1&#41;
+    end
+  end
+
+  return res
+end
+
+function from_ring&#40;v::EuclideanRingResidueRingElem&#41;
+  coeff &#61; join&#40;map&#40;string, collect&#40;coefficients&#40;lift&#40;v&#41;&#41;&#41;&#41;&#41; # lsb first
+  bitstring &#61; &quot;&quot;
+  for c in coeff
+    bitstring &#61; string&#40;c&#41; * bitstring
+  end
+  for _ &#61; 1:&#40;128-length&#40;coeff&#41;&#41;
+    bitstring &#61; &quot;0&quot; * bitstring
+  end
+  @assert length&#40;bitstring&#41; &#61;&#61; 128
+  @show bitstring
+  return hex2bytes&#40;string&#40;parse&#40;BigInt, bitstring, base &#61; 2&#41;, base &#61; 16, pad &#61; 32&#41;&#41;
+end
+
+
+function Base.divrem&#40;
+  a::EuclideanRingResidueRingElem&#123;FqPolyRingElem&#125;,
+  b::EuclideanRingResidueRingElem&#123;FqPolyRingElem&#125;,
+&#41;
+  # suppose a &#61; bq &#43; r in the parent ring
+  # Then a &#61; bq &#43; r in the quotient ring also?
+  q, r &#61; divrem&#40;lift&#40;a&#41;, lift&#40;b&#41;&#41;
+
+  q, r &#61; R&#40;q&#41;, R&#40;r&#41;
+  @assert a &#61;&#61; b * q &#43; r
+  q, r
+end
+
+
+function menu&#40;conn&#41;
+  print&#40;readuntil&#40;conn, &quot;\n&quot;, keep &#61; true&#41;&#41;
+
+end
+
+function round_number&#40;conn&#41;
+  print&#40;readuntil&#40;conn, &quot;\n&quot;, keep &#61; true&#41;&#41;
+end
+
+function known_preimage&#40;conn&#41;
+  line &#61; readuntil&#40;conn, &quot;\n&quot;&#41;
+  m &#61; match&#40;r&quot;You know H\&#40;&#40;.*&#41;\&#41; &#61; &#40;.*&#41;&quot;, line&#41;
+  @show m
+
+  message, hashed &#61; m&#91;1&#93;, m&#91;2&#93;
+
+  hex2bytes&#40;message&#41;, hex2bytes&#40;hashed&#41;
+end
+
+function send_state&#40;conn, state&#41;
+  msg &#61; join&#40;string.&#40;state&#41;, &quot;,&quot;&#41;
+  write&#40;conn, msg * &quot;\n&quot;&#41;
+  print&#40;readuntil&#40;conn, &quot;\n&quot;, keep &#61; true&#41;&#41;
+end
+
+
+function sendlineafter&#40;conn, line, msg&#41;
+  @show String&#40;readuntil&#40;conn, line&#41;&#41;
+  write&#40;conn, msg * &quot;\n&quot;&#41;
+end
+
+function solve_for_state&#40;message::AbstractVector&#123;UInt8&#125;, hashed::AbstractVector&#123;UInt8&#125;&#41;
+  hash_steps &#61; message .⊻ hashed
+  hash_step1, hash_step2 &#61; to_ring&#40;hash_steps&#91;1:16&#93;&#41;, to_ring&#40;hash_steps&#91;17:end&#93;&#41;
+
+  while true
+    try
+      a_, b_, c_, d_ &#61; rand&#40;0:127, 4&#41;
+      a, b, c, d &#61; &#91;x^i for i in &#91;a_, b_, c_, d_&#93;&#93;
+
+      lhs &#61; matrix&#40;R,
+        &#91;
+          a b
+          c d
+        &#93;,
+      &#41;
+      rhs &#61; matrix&#40;R, &#91;&#91;hash_step1&#93;, &#91;hash_step2&#93;&#93;&#41;
+      A, B &#61; particular_solution &#61; Oscar.solve&#40;lhs, rhs; side &#61; :right&#41;
+
+      state &#61; &#91;
+        &#91;a_, b_, c_, d_&#93;
+        evalpoly&#40;big&#40;256&#41;, reverse&#40;from_ring&#40;A&#41;&#41;&#41;
+        evalpoly&#40;big&#40;256&#41;, reverse&#40;from_ring&#40;B&#41;&#41;&#41;
+      &#93;
+      return state
+    catch e
+      if e isa ArgumentError # system is inconsistent. retry with new values
+        @show e
+      else
+        rethrow&#40;e&#41;
+      end
+    end
+  end
+end
+
+function solve&#40;&#41;
+  conn &#61; connect&#40;&quot;94.237.54.153&quot;, 40896&#41;
+  menu&#40;conn&#41;
+
+  while true
+    round_number&#40;conn&#41;
+    message, hashed &#61; known_preimage&#40;conn&#41;
+    state &#61; solve_for_state&#40;message, hashed&#41;
+    send_state&#40;conn, state&#41;
+  end
+  close&#40;conn&#41;
+end</code></pre>
+<h3 id=flag__10 ><a href="#flag__10" class=header-anchor >Flag</a></h3>
+<pre><code class=language-plaintext >HTB&#123;k33p_r0t4t1ng_4nd_r0t4t1ng_4nd_x0r1ng_4nd_r0t4t1ng&#33;&#125;</code></pre>
+<div class=page-foot >
+    Last modified: March 14, 2024.
+    Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
+</div>
+</div>
+        </div> 
+    </div> 
+    
+        <script src="/wednesday/libs/katex/katex.min.js"></script>
+<script src="/wednesday/libs/katex/contrib/auto-render.min.js"></script>
+<script>renderMathInElement(document.body)</script>
+
+    
+    
+        <script src="/wednesday/libs/highlight/highlight.min.js"></script>
+<script>hljs.highlightAll();hljs.configure({tabReplace: '    '});</script>
