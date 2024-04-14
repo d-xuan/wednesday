@@ -7,5 +7,5 @@ from [Manchester by the Sea (2016)](https://en.wikipedia.org/wiki/Manchester_by_
 the [Rising Sea](https://ncatlab.org/nlab/show/The+Rising+Sea) from
 Alexander Grothendieck.
 
-Contact: `wednesda_y` on Discord 
+Contact: `wednesda_y` on Discord, or through [LinkedIn](https://www.linkedin.com/in/darren-xuan-662911249/) 
 
