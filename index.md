@@ -12,6 +12,8 @@
 ---
 
 ### Latest posts
+- [PlaidCTF 2024 - All cryptography challenges](/ctf/plaid24)
+
 - [HTB Cyber Apocalypse CTF 2024 - All cryptography challenges](/ctf/htbroyale24)
 
 - [LA CTF 2024 - All cryptography challenges](/ctf/lactf24)

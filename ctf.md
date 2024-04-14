@@ -1,4 +1,6 @@
 # ctf writeups
+[PlaidCTF 2024](/ctf/plaid24)
+
 [HTB Cyber Apocalypse CTF 2024](/ctf/htbroyale24)
 
 [LA CTF 2024](/ctf/lactf24)
