@@ -1,4 +1,4 @@
-<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/katex/katex.min.css"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=stylesheet  href="/wednesday/css/dark-reader.css"> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>PlaidCTF 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> </ul> </div> <div id=main > <div class=franklin-content ><h1 id=plaidctf_2024 ><a href="#plaidctf_2024" class=header-anchor >PlaidCTF 2024</a></h1> <p>Over the weekend I played in PPP&#39;s <a href="https://plaidctf.com/">PlaidCTF</a>, and managed to solve all the cryptography challenges&#33;</p> <p>Going in, I expected the difficulty to be slightly above my current skill level, so I&#39;m quite pleased with this result. Overall I spent about 6 hours on each challenge, with 12 hours on the first day for <code>DHCPPP</code> and <code>Paranormial Commmitment Scheme</code>, and then another 6 hours on the second day to solve <code>MMORPG</code>. </p> <p>This was definitely one of my favourite CTFs this year. Massive thank you to <a href="https://pwning.net/">Plaid Parliament of Pwning</a> for hosting.</p> <div class=franklin-toc ><ol><li><a href="#dhcppp">DHCPPP</a><li><a href="#paranormial_commitment_scheme">Paranormial Commitment Scheme</a><li><a href="#mmorpg">MMORPG </a></ol></div> <h2 id=dhcppp ><a href="#dhcppp" class=header-anchor >DHCPPP</a></h2> <p>In this challenge we are given access to two servers: a DHCP server which simulates assigning IP addresses and DNS parameters to clients using the DHCP protocol, and a flag server which receives leases from the DHCP server and uses the provided parameters to make HTTP requests.</p> <pre><code class="python hljs"><span class=hljs-keyword >import</span> time, zlib
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/katex/katex.min.css"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>PlaidCTF 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> </ul> </div> <div id=main > <div class=franklin-content ><h1 id=plaidctf_2024 ><a href="#plaidctf_2024" class=header-anchor >PlaidCTF 2024</a></h1> <p>Over the weekend I played in PPP&#39;s <a href="https://plaidctf.com/">PlaidCTF</a>, and managed to solve all the cryptography challenges&#33;</p> <p>Going in, I expected the difficulty to be slightly above my current skill level, so I&#39;m quite pleased with this result. Overall I spent about 6 hours on each challenge, with 12 hours on the first day for <code>DHCPPP</code> and <code>Paranormial Commmitment Scheme</code>, and then another 6 hours on the second day to solve <code>MMORPG</code>. </p> <p>This was definitely one of my favourite CTFs this year. Massive thank you to <a href="https://pwning.net/">Plaid Parliament of Pwning</a> for hosting.</p> <div class=franklin-toc ><ol><li><a href="#dhcppp">DHCPPP</a><li><a href="#paranormial_commitment_scheme">Paranormial Commitment Scheme</a><li><a href="#mmorpg">MMORPG </a></ol></div> <h2 id=dhcppp ><a href="#dhcppp" class=header-anchor >DHCPPP</a></h2> <p>In this challenge we are given access to two servers: a DHCP server which simulates assigning IP addresses and DNS parameters to clients using the DHCP protocol, and a flag server which receives leases from the DHCP server and uses the provided parameters to make HTTP requests.</p> <pre><code class="python hljs"><span class=hljs-keyword >import</span> time, zlib
 <span class=hljs-keyword >import</span> secrets
 <span class=hljs-keyword >import</span> hashlib
 <span class=hljs-keyword >import</span> requests
@@ -41,26 +41,26 @@ RNG_INIT = secrets.token_bytes(<span class=hljs-number >512</span>)
 
 <span class=hljs-keyword >class</span> <span class="hljs-title class_">DHCPServer</span>:
     <span class=hljs-keyword >def</span> <span class="hljs-title function_">__init__</span>(<span class=hljs-params >self</span>):
-        self.leases = []
-        self.ips = [<span class=hljs-string >f&quot;192.168.1.<span class=hljs-subst >{i}</span>&quot;</span> <span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-built_in >range</span>(<span class=hljs-number >3</span>, <span class=hljs-number >64</span>)]
-        self.mac = <span class=hljs-built_in >bytes</span>.fromhex(<span class=hljs-string >&quot;1b 7d 6f 49 37 c9&quot;</span>)
-        self.gateway_ip = <span class=hljs-string >&quot;192.168.1.1&quot;</span>
+        <span class="hljs-variable language_">self</span>.leases = []
+        <span class="hljs-variable language_">self</span>.ips = [<span class=hljs-string >f&quot;192.168.1.<span class=hljs-subst >{i}</span>&quot;</span> <span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-built_in >range</span>(<span class=hljs-number >3</span>, <span class=hljs-number >64</span>)]
+        <span class="hljs-variable language_">self</span>.mac = <span class=hljs-built_in >bytes</span>.fromhex(<span class=hljs-string >&quot;1b 7d 6f 49 37 c9&quot;</span>)
+        <span class="hljs-variable language_">self</span>.gateway_ip = <span class=hljs-string >&quot;192.168.1.1&quot;</span>
 
-        self.leases.append((<span class=hljs-string >&quot;192.168.1.2&quot;</span>, <span class=hljs-string >b&quot;rngserver_0&quot;</span>, time.time(), []))
+        <span class="hljs-variable language_">self</span>.leases.append((<span class=hljs-string >&quot;192.168.1.2&quot;</span>, <span class=hljs-string >b&quot;rngserver_0&quot;</span>, time.time(), []))
 
     <span class=hljs-keyword >def</span> <span class="hljs-title function_">get_lease</span>(<span class=hljs-params >self, dev_name</span>):
-        <span class=hljs-keyword >if</span> <span class=hljs-built_in >len</span>(self.ips) != <span class=hljs-number >0</span>:
-            ip = self.ips.pop(<span class=hljs-number >0</span>)
-            self.leases.append((ip, dev_name, time.time(), []))
+        <span class=hljs-keyword >if</span> <span class=hljs-built_in >len</span>(<span class="hljs-variable language_">self</span>.ips) != <span class=hljs-number >0</span>:
+            ip = <span class="hljs-variable language_">self</span>.ips.pop(<span class=hljs-number >0</span>)
+            <span class="hljs-variable language_">self</span>.leases.append((ip, dev_name, time.time(), []))
         <span class=hljs-keyword >else</span>:
             <span class=hljs-comment ># relinquish the oldest lease</span>
-            old_lease = self.leases.pop(<span class=hljs-number >0</span>)
+            old_lease = <span class="hljs-variable language_">self</span>.leases.pop(<span class=hljs-number >0</span>)
             ip = old_lease[<span class=hljs-number >0</span>]
-            self.leases.append((ip, dev_name, time.time(), []))
+            <span class="hljs-variable language_">self</span>.leases.append((ip, dev_name, time.time(), []))
 
         pkt = <span class=hljs-built_in >bytearray</span>(
             <span class=hljs-built_in >bytes</span>([<span class=hljs-built_in >int</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> ip.split(<span class=hljs-string >&quot;.&quot;</span>)]) +
-            <span class=hljs-built_in >bytes</span>([<span class=hljs-built_in >int</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> self.gateway_ip.split(<span class=hljs-string >&quot;.&quot;</span>)]) +
+            <span class=hljs-built_in >bytes</span>([<span class=hljs-built_in >int</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> <span class="hljs-variable language_">self</span>.gateway_ip.split(<span class=hljs-string >&quot;.&quot;</span>)]) +
             <span class=hljs-built_in >bytes</span>([<span class=hljs-number >255</span>, <span class=hljs-number >255</span>, <span class=hljs-number >255</span>, <span class=hljs-number >0</span>]) +
             <span class=hljs-built_in >bytes</span>([<span class=hljs-number >8</span>, <span class=hljs-number >8</span>, <span class=hljs-number >8</span>, <span class=hljs-number >8</span>]) +
             <span class=hljs-built_in >bytes</span>([<span class=hljs-number >8</span>, <span class=hljs-number >8</span>, <span class=hljs-number >4</span>, <span class=hljs-number >4</span>]) +
@@ -68,7 +68,7 @@ RNG_INIT = secrets.token_bytes(<span class=hljs-number >512</span>)
             <span class=hljs-string >b&quot;\x00&quot;</span>
         )
 
-        pkt = <span class=hljs-string >b&quot;\x02&quot;</span> + encrypt_msg(pkt, self.get_entropy_from_lavalamps()) + calc_crc(pkt)
+        pkt = <span class=hljs-string >b&quot;\x02&quot;</span> + encrypt_msg(pkt, <span class="hljs-variable language_">self</span>.get_entropy_from_lavalamps()) + calc_crc(pkt)
 
         <span class=hljs-keyword >return</span> pkt
 
@@ -77,7 +77,7 @@ RNG_INIT = secrets.token_bytes(<span class=hljs-number >512</span>)
         <span class=hljs-comment ># Falling back to local RNG if necessary</span>
         entropy_pool = RNG_INIT
 
-        <span class=hljs-keyword >for</span> ip, name, ts, tags <span class=hljs-keyword >in</span> self.leases:
+        <span class=hljs-keyword >for</span> ip, name, ts, tags <span class=hljs-keyword >in</span> <span class="hljs-variable language_">self</span>.leases:
             <span class=hljs-keyword >if</span> <span class=hljs-string >b&quot;rngserver&quot;</span> <span class=hljs-keyword >in</span> name:
                 <span class=hljs-keyword >try</span>:
                     <span class=hljs-comment ># get entropy from the server</span>
@@ -96,18 +96,18 @@ RNG_INIT = secrets.token_bytes(<span class=hljs-number >512</span>)
         dst_mac = pkt[<span class=hljs-number >6</span>:<span class=hljs-number >12</span>]
         msg = pkt[<span class=hljs-number >12</span>:]
 
-        <span class=hljs-keyword >if</span> dst_mac != self.mac:
+        <span class=hljs-keyword >if</span> dst_mac != <span class="hljs-variable language_">self</span>.mac:
             <span class=hljs-keyword >return</span> <span class=hljs-literal >None</span>
 
-        <span class=hljs-keyword >if</span> src_mac == self.mac:
+        <span class=hljs-keyword >if</span> src_mac == <span class="hljs-variable language_">self</span>.mac:
             <span class=hljs-keyword >return</span> <span class=hljs-literal >None</span>
 
         <span class=hljs-keyword >if</span> <span class=hljs-built_in >len</span>(msg) <span class=hljs-keyword >and</span> msg.startswith(<span class=hljs-string >b&quot;\x01&quot;</span>):
             <span class=hljs-comment ># lease request</span>
             dev_name = msg[<span class=hljs-number >1</span>:]
-            lease_resp = self.get_lease(dev_name)
+            lease_resp = <span class="hljs-variable language_">self</span>.get_lease(dev_name)
             <span class=hljs-keyword >return</span> (
-                self.mac +
+                <span class="hljs-variable language_">self</span>.mac +
                 src_mac + <span class=hljs-comment ># dest mac</span>
                 lease_resp
             )
@@ -116,14 +116,14 @@ RNG_INIT = secrets.token_bytes(<span class=hljs-number >512</span>)
 
 <span class=hljs-keyword >class</span> <span class="hljs-title class_">FlagServer</span>:
     <span class=hljs-keyword >def</span> <span class="hljs-title function_">__init__</span>(<span class=hljs-params >self, dhcp</span>):
-        self.mac = <span class=hljs-built_in >bytes</span>.fromhex(<span class=hljs-string >&quot;53 79 82 b5 97 eb&quot;</span>)
-        self.dns = dns.resolver.Resolver()
-        self.process_pkt(dhcp.process_pkt(self.mac+dhcp.mac+<span class=hljs-string >b&quot;\x01&quot;</span>+<span class=hljs-string >b&quot;flag_server&quot;</span>))
+        <span class="hljs-variable language_">self</span>.mac = <span class=hljs-built_in >bytes</span>.fromhex(<span class=hljs-string >&quot;53 79 82 b5 97 eb&quot;</span>)
+        <span class="hljs-variable language_">self</span>.dns = dns.resolver.Resolver()
+        <span class="hljs-variable language_">self</span>.process_pkt(dhcp.process_pkt(<span class="hljs-variable language_">self</span>.mac+dhcp.mac+<span class=hljs-string >b&quot;\x01&quot;</span>+<span class=hljs-string >b&quot;flag_server&quot;</span>))
 
     <span class=hljs-keyword >def</span> <span class="hljs-title function_">send_flag</span>(<span class=hljs-params >self</span>):
         <span class=hljs-keyword >with</span> <span class=hljs-built_in >open</span>(<span class=hljs-string >&quot;flag.txt&quot;</span>, <span class=hljs-string >&quot;r&quot;</span>) <span class=hljs-keyword >as</span> f:
             flag = f.read().strip()
-        curl(<span class=hljs-string >&quot;example.com&quot;</span>, <span class=hljs-string >f&quot;/<span class=hljs-subst >{flag}</span>&quot;</span>, self.dns)
+        curl(<span class=hljs-string >&quot;example.com&quot;</span>, <span class=hljs-string >f&quot;/<span class=hljs-subst >{flag}</span>&quot;</span>, <span class="hljs-variable language_">self</span>.dns)
 
     <span class=hljs-keyword >def</span> <span class="hljs-title function_">process_pkt</span>(<span class=hljs-params >self, pkt</span>):
         <span class=hljs-keyword >assert</span> pkt <span class=hljs-keyword >is</span> <span class=hljs-keyword >not</span> <span class=hljs-literal >None</span>
@@ -132,10 +132,10 @@ RNG_INIT = secrets.token_bytes(<span class=hljs-number >512</span>)
         dst_mac = pkt[<span class=hljs-number >6</span>:<span class=hljs-number >12</span>]
         msg = pkt[<span class=hljs-number >12</span>:]
 
-        <span class=hljs-keyword >if</span> dst_mac != self.mac:
+        <span class=hljs-keyword >if</span> dst_mac != <span class="hljs-variable language_">self</span>.mac:
             <span class=hljs-keyword >return</span> <span class=hljs-literal >None</span>
 
-        <span class=hljs-keyword >if</span> src_mac == self.mac:
+        <span class=hljs-keyword >if</span> src_mac == <span class="hljs-variable language_">self</span>.mac:
             <span class=hljs-keyword >return</span> <span class=hljs-literal >None</span>
 
         <span class=hljs-keyword >if</span> <span class=hljs-built_in >len</span>(msg) <span class=hljs-keyword >and</span> msg.startswith(<span class=hljs-string >b&quot;\x02&quot;</span>):
@@ -145,21 +145,21 @@ RNG_INIT = secrets.token_bytes(<span class=hljs-number >512</span>)
             crc = msg[-<span class=hljs-number >4</span>:]
             <span class=hljs-keyword >assert</span> crc == calc_crc(pkt)
 
-            self.ip = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >0</span>:<span class=hljs-number >4</span>])
-            self.gateway_ip = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >4</span>:<span class=hljs-number >8</span>])
-            self.subnet_mask = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >8</span>:<span class=hljs-number >12</span>])
-            self.dns1 = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >12</span>:<span class=hljs-number >16</span>])
-            self.dns2 = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >16</span>:<span class=hljs-number >20</span>])
-            self.dns.nameservers = [self.dns1, self.dns2]
+            <span class="hljs-variable language_">self</span>.ip = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >0</span>:<span class=hljs-number >4</span>])
+            <span class="hljs-variable language_">self</span>.gateway_ip = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >4</span>:<span class=hljs-number >8</span>])
+            <span class="hljs-variable language_">self</span>.subnet_mask = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >8</span>:<span class=hljs-number >12</span>])
+            <span class="hljs-variable language_">self</span>.dns1 = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >12</span>:<span class=hljs-number >16</span>])
+            <span class="hljs-variable language_">self</span>.dns2 = <span class=hljs-string >&quot;.&quot;</span>.join(<span class=hljs-built_in >str</span>(x) <span class=hljs-keyword >for</span> x <span class=hljs-keyword >in</span> pkt[<span class=hljs-number >16</span>:<span class=hljs-number >20</span>])
+            <span class="hljs-variable language_">self</span>.dns.nameservers = [<span class="hljs-variable language_">self</span>.dns1, <span class="hljs-variable language_">self</span>.dns2]
             <span class=hljs-keyword >assert</span> pkt.endswith(<span class=hljs-string >b&quot;\x00&quot;</span>)
 
-            <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;[FLAG SERVER] [DEBUG] Got DHCP lease&quot;</span>, self.ip, self.gateway_ip, self.subnet_mask, self.dns1, self.dns2)
+            <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;[FLAG SERVER] [DEBUG] Got DHCP lease&quot;</span>, <span class="hljs-variable language_">self</span>.ip, <span class="hljs-variable language_">self</span>.gateway_ip, <span class="hljs-variable language_">self</span>.subnet_mask, <span class="hljs-variable language_">self</span>.dns1, <span class="hljs-variable language_">self</span>.dns2)
 
             <span class=hljs-keyword >return</span> <span class=hljs-literal >None</span>
 
         <span class=hljs-keyword >elif</span> <span class=hljs-built_in >len</span>(msg) <span class=hljs-keyword >and</span> msg.startswith(<span class=hljs-string >b&quot;\x03&quot;</span>):
             <span class=hljs-comment ># FREE FLAGES!!!!!!!</span>
-            self.send_flag()
+            <span class="hljs-variable language_">self</span>.send_flag()
             <span class=hljs-keyword >return</span> <span class=hljs-literal >None</span>
 
         <span class=hljs-keyword >else</span>:
@@ -189,7 +189,7 @@ RNG_INIT = secrets.token_bytes(<span class=hljs-number >512</span>)
     <span class=hljs-comment ># Falling back to local RNG if necessary</span>
     entropy_pool = RNG_INIT
 
-    <span class=hljs-keyword >for</span> ip, name, ts, tags <span class=hljs-keyword >in</span> self.leases:
+    <span class=hljs-keyword >for</span> ip, name, ts, tags <span class=hljs-keyword >in</span> <span class="hljs-variable language_">self</span>.leases:
         <span class=hljs-keyword >if</span> <span class=hljs-string >b&quot;rngserver&quot;</span> <span class=hljs-keyword >in</span> name:
             <span class=hljs-keyword >try</span>:
                 <span class=hljs-comment ># get entropy from the server</span>
@@ -1284,10 +1284,6 @@ pwn.context.log_level = <span class=hljs-string >&quot;debug&quot;</span>
     conn.interactive()</code></pre>
 <h3 id=flag__3 ><a href="#flag__3" class=header-anchor >Flag</a></h3>
 <pre><code class="plaintext hljs">PCTF{n1c3_w0rk_th4ts_a_sp0oky_h45h_coll1der_e66351ecdc2a593278174541ad513125}</code></pre>
-<div class=page-foot >
-    Last modified: April 14, 2024.
-    Website built with <a href="https://github.com/tlienart/Franklin.jl">Franklin.jl</a> and the <a href="https://julialang.org">Julia programming language</a>.
-</div>
 </div>
         </div> 
     </div> 
