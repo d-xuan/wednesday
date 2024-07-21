@@ -2,10 +2,15 @@
 
 # about
 
-Writeups on security and CTFs (mainly crypto). The image on the home page is
-from [Manchester by the Sea (2016)](https://en.wikipedia.org/wiki/Manchester_by_the_Sea_(film)). The quote is
-the [Rising Sea](https://ncatlab.org/nlab/show/The+Rising+Sea) from
-Alexander Grothendieck.
+The image on the home page was
+made by Wikimedia user
+[Fastily](https://commons.wikimedia.org/wiki/File:Black_and_White_Cat_Sketch.svg)
+and reproduced here under the [CC-SA 4.0 license]( https://creativecommons.org/licenses/by-sa/4.0/
+).
 
-Contact: `wednesda_y` on Discord, or through [LinkedIn](https://www.linkedin.com/in/darren-xuan-662911249/) 
+
+Contact: `wednesda_y` on Discord, or through [LinkedIn](https://www.linkedin.com/in/darren-xuan-662911249/)
+
+
+ 
 

@@ -83,7 +83,6 @@ html {
   position: relative;
   padding-left: 12.5%;
   padding-right: 12.5%;
-  line-height: 1.35em;
 }
 
 /* On wide screens, fix content width to a max value. */
@@ -127,10 +126,9 @@ h6 {
 }
 
 .franklin-content h1 {
-  padding-bottom: 0.5em;
   /* border-bottom: 3px double lightgrey; */
   margin-top: 0.85em;
-  margin-bottom: 0.5em;
+  margin-bottom: 1em;
 }
 
 .franklin-content h2 {
@@ -330,7 +328,6 @@ body {
 ================================================================== */
 
 code {
-  background-color: var(--block-background);
   padding: 0.1em 0.2em;
   border-radius: 2px;
   font-size: var(--small);

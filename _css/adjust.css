@@ -1,9 +1,5 @@
 /* adjustments for Franklin */
 
-.franklin-content code {
-  font-size: var(--small);
-}
-
 .franklin-content {
   font-size: 1.4rem;
 }
@@ -25,7 +21,6 @@
 }
 
 #menu ul li a {
-  color: #111;
   text-decoration: none;
   position: relative;
   padding: 10px 10px;
@@ -52,13 +47,6 @@
 #menu ul li a:hover::after {
   visibility: visible;
   transform: scaleX(1);
-}
-
-.franklin-content {
-  padding-left: 10%;
-}
-.franklin-content {
-  padding-right: 5%;
 }
 
 @media (max-width: 940px) {
@@ -106,4 +94,13 @@
 .invert_image img {
   --webkit-filter: invert(1);
   filter: invert(1);
+}
+
+.cat img {
+  width: 40%;
+  margin-bottom: 2em;
+}
+
+summary {
+  margin-bottom: 1rem;
 }
