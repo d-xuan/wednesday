@@ -14,7 +14,7 @@
 Writeups on security and CTFs (mainly cryptography).
 
 
-
+- [niteCTF 2024 - Mix of crypto, pwn and rev](/ctf/niteCTF2024)
 - [PlaidCTF 2024 - All cryptography challenges](/ctf/plaid24)
 - [HTB Cyber Apocalypse CTF 2024 - All cryptography challenges](/ctf/htbroyale24)
 - [LA CTF 2024 - All cryptography challenges](/ctf/lactf24)

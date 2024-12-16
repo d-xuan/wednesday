@@ -96,6 +96,13 @@
   filter: invert(1);
 }
 
+.small_image img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 40%;
+}
+
 .cat img {
   width: 40%;
   margin-bottom: 2em;
