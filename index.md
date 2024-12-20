@@ -13,7 +13,7 @@
 
 Writeups on security and CTFs (mainly cryptography).
 
-
+- [TSGCTF 2024 - Easy(??) ECDLP and FL Support Center](/ctf/TSGCTF2024)
 - [niteCTF 2024 - Mix of crypto, pwn and rev](/ctf/niteCTF2024)
 - [PlaidCTF 2024 - All cryptography challenges](/ctf/plaid24)
 - [HTB Cyber Apocalypse CTF 2024 - All cryptography challenges](/ctf/htbroyale24)

