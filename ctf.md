@@ -1,4 +1,6 @@
 # ctf writeups
+[0CTF 2024](/ctf/0CTF2024)
+
 [TSGCTF 2024](/ctf/TSGCTF2024)
 
 [niteCTF 2024](/ctf/niteCTF2024)
