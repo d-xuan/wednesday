@@ -256,11 +256,9 @@ linear combinations $P, Q$ and $P + Q$ of a 2-torsion basis $(P,
 Q)$ respectively.
 
 @@small_image
-\begin{tikzcd}{cd}
-                                                                                                                                  &                                                & {} \\
-E \arrow[r, "\varphi_2"', bend right] \arrow[r, "\varphi_1", bend left] \arrow["\varphi_3"', loop, distance=2em, in=215, out=145] & E_0 \arrow[ru, "\phi_1"] \arrow[rd, "\phi_2"'] &    \\
-                                                                                                                                  &                                                & {}
-\end{tikzcd}
+@@invert_image
+![Diagram](/assets/0CTF2024/cd.svg)
+@@
 @@
 
 Using the notations in the above diagram, this means that any isogeny from $E_0$ to $E_A$ which factors through $E$ must necessarily return to $E_0$ via one of either $\varphi_1$ or $\varphi_2$ before continuing onto $E_A$. For

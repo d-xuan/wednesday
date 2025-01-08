@@ -5,7 +5,7 @@
 
 @@cat
 @@invert_image
-![Manchester by the Sea](./assets/Black_and_White_Cat_Sketch.svg)
+![Cat](./assets/Black_and_White_Cat_Sketch.svg)
 @@
 @@
 
