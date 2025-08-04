@@ -9,7 +9,7 @@ and reproduced here under the [CC-SA 4.0 license]( https://creativecommons.org/l
 ).
 
 
-Contact: `wednesda_y` on Discord, or through [LinkedIn](https://www.linkedin.com/in/darren-xuan-662911249/)
+Contact: `wednesda_y` on Discord
 
 
  
