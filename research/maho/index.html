@@ -1,4 +1,4 @@
-<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>CVE-2025-58449</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> <li><a href="/wednesday/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=cve-2025-58449 ><a href="#cve-2025-58449" class=header-anchor >CVE-2025-58449</a></h1> <h4 id=summary ><a href="#summary" class=header-anchor >Summary</a></h4> <p>In Maho 25.7.0, an authenticated staff user with access to the <code>Dashboard</code> and <code>Catalog\Manage Products</code> permissions can create a custom option on a listing with a file input field. By allowing file uploads with a <code>.php</code> extension, the user can use the filed to upload malicious PHP files, gaining remote code execution</p> <h4 id=details ><a href="#details" class=header-anchor >Details</a></h4> <p>An user with the <code>Dashboard</code> and <code>Catalog\Manage Products</code> permissions can abuse the product custom options feature to bypass the application’s file upload restrictions.</p> <p>When creating a product custom option of type file upload, the user is allowed to define their own extension whitelist. This bypasses the application’s normal enforced whitelist and permits disallowed extensions, including <code>.php</code>.</p> <p>The file uploaded by the custom option is then written to a predictable location:</p> <pre><code class="julia hljs">/public/media/custom_options/&lt;first char of filename&gt;/&lt;second char of filename&gt;/&lt;md5 of file contents&gt;.php</code></pre>
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/css/franklin.css" /> <link rel=stylesheet  href="/css/tufte.css" /> <link rel=stylesheet  href="/css/latex.css" /> <link rel=stylesheet  href="/css/adjust.css" /> <link rel=icon  href="/assets/favicon.png" /> <title>CVE-2025-58449</title> <div id=layout > <div id=menu > <ul> <li><a href="/">home</a> <li><a href="/about/">about</a> <li><a href="/ctf/">ctf</a> <li><a href="/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=cve-2025-58449 ><a href="#cve-2025-58449" class=header-anchor >CVE-2025-58449</a></h1> <h4 id=summary ><a href="#summary" class=header-anchor >Summary</a></h4> <p>In Maho 25.7.0, an authenticated staff user with access to the <code>Dashboard</code> and <code>Catalog\Manage Products</code> permissions can create a custom option on a listing with a file input field. By allowing file uploads with a <code>.php</code> extension, the user can use the filed to upload malicious PHP files, gaining remote code execution</p> <h4 id=details ><a href="#details" class=header-anchor >Details</a></h4> <p>An user with the <code>Dashboard</code> and <code>Catalog\Manage Products</code> permissions can abuse the product custom options feature to bypass the application’s file upload restrictions.</p> <p>When creating a product custom option of type file upload, the user is allowed to define their own extension whitelist. This bypasses the application’s normal enforced whitelist and permits disallowed extensions, including <code>.php</code>.</p> <p>The file uploaded by the custom option is then written to a predictable location:</p> <pre><code class="julia hljs">/public/media/custom_options/&lt;first char of filename&gt;/&lt;second char of filename&gt;/&lt;md5 of file contents&gt;.php</code></pre>
 <p>Because this path is directly accessible under the application’s webroot, an attacker can then request the uploaded file via HTTP, causing the server to execute the PHP payload.</p>
 <h4 id=poc ><a href="#poc" class=header-anchor >PoC</a></h4>
 <ol>
@@ -7,17 +7,17 @@
 <li><p>Navigate to a product catalog listing, for example by clicking on a product linked within the <code>Most Viewed Products</code> tab on the dashboard.</p>
 
 </ol>
-<p><img src="/wednesday/assets/maho/maho-1.png" alt=maho-1  /></p>
+<p><img src="/assets/maho/maho-1.png" alt=maho-1  /></p>
 <ol start=3 >
 <li><p>Navigate to the &quot;Custom Options&quot; tab on the product, and create a custom option with a file upload field. Add <code>.php</code> as an allowed extension to the file upload configuration. Save the configuration after making the changes.</p>
 
 </ol>
-<p><img src="/wednesday/assets/maho/maho-2.png" alt=maho-2  /></p>
+<p><img src="/assets/maho/maho-2.png" alt=maho-2  /></p>
 <ol start=4 >
 <li><p>In a private window, navigate to the customer facing page for the product, and upload a reverse shell PHP file through the newly configured option. Then click &quot;Add to cart&quot; to complete the upload.</p>
 
 </ol>
-<p><img src="/wednesday/assets/maho/maho-3.png" alt=maho-3  /></p>
+<p><img src="/assets/maho/maho-3.png" alt=maho-3  /></p>
 <ol start=5 >
 <li><p>Calculate the location of the uploaded file on the web server as </p>
 
@@ -27,7 +27,7 @@
 <li><p>Navigate to the above path directly to execute the file contents and trigger the reverse shell.</p>
 
 </ol>
-<p><img src="/wednesday/assets/maho/maho-4.png" alt=maho-4  /></p>
+<p><img src="/assets/maho/maho-4.png" alt=maho-4  /></p>
 <h4 id=impact ><a href="#impact" class=header-anchor >Impact</a></h4>
 <p>This vulnerability allows remote code execution &#40;RCE&#41; on the server. It requires only the <code>Catalog\Manage</code> Products permission, and does not need full administrative access. By leveraging the custom option upload feature, an attacker can bypass the application’s normal file upload protections and execute arbitrary PHP code within the webroot.</p>
 <h4 id=timeline ><a href="#timeline" class=header-anchor >Timeline</a></h4>
@@ -44,11 +44,11 @@
     </div> 
     
     
-        <script src="/wednesday/libs/highlight/highlight.min.js"></script>
+        <script src="/libs/highlight/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script>
-<script src="/wednesday/libs/highlight/rust.min.js"></script>
-<script src="/wednesday/libs/highlight/csharp.min.js"></script>
+<script src="/libs/highlight/rust.min.js"></script>
+<script src="/libs/highlight/csharp.min.js"></script>
 <script>
   hljs.highlightAll();
   hljs.configure({ tabReplace: "    " });

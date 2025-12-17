@@ -1,4 +1,4 @@
-<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/katex/katex.min.css"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>niteCTF 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> <li><a href="/wednesday/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=nitectf_2024 ><a href="#nitectf_2024" class=header-anchor >niteCTF 2024</a></h1> <p>It&#39;s the end of the year, which means it&#39;s time for another niteCTF&#33;</p> <p>As always, a massive thank you to <a href="https://cryptonitemit.in/">Team Cryptonite</a> for hosting.</p> <div class=franklin-toc ><ol><li><a href="#print_the_gifts_pwn">Print the Gifts &#40;pwn&#41;</a><li><a href="#mixed_signals_pwn">Mixed Signals &#40;pwn&#41;</a><li><a href="#chaterine_pwn">Chaterine &#40;pwn&#41;</a><li><a href="#gate_keeping_rev">Gate Keeping &#40;rev&#41;</a><li><a href="#r_stands_alone_crypto">R Stands Alone &#40;crypto&#41;</a><li><a href="#import_random_crypto">Import Random &#40;crypto&#41;</a><li><a href="#quadrillion_matrices_crypto">Quadrillion Matrices &#40;crypto&#41;</a></ol></div> <h2 id=print_the_gifts_pwn ><a href="#print_the_gifts_pwn" class=header-anchor >Print the Gifts &#40;pwn&#41;</a></h2> <p>This challenge is a classic format string challenge, with NX, PIE, ASLR and full RELRO enabled.</p> <pre><code class=language-bash >❯ pwn checksec chall
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/libs/katex/katex.min.css"> <link rel=stylesheet  href="/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/css/franklin.css" /> <link rel=stylesheet  href="/css/tufte.css" /> <link rel=stylesheet  href="/css/latex.css" /> <link rel=stylesheet  href="/css/adjust.css" /> <link rel=icon  href="/assets/favicon.png" /> <title>niteCTF 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/">home</a> <li><a href="/about/">about</a> <li><a href="/ctf/">ctf</a> <li><a href="/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=nitectf_2024 ><a href="#nitectf_2024" class=header-anchor >niteCTF 2024</a></h1> <p>It&#39;s the end of the year, which means it&#39;s time for another niteCTF&#33;</p> <p>As always, a massive thank you to <a href="https://cryptonitemit.in/">Team Cryptonite</a> for hosting.</p> <div class=franklin-toc ><ol><li><a href="#print_the_gifts_pwn">Print the Gifts &#40;pwn&#41;</a><li><a href="#mixed_signals_pwn">Mixed Signals &#40;pwn&#41;</a><li><a href="#chaterine_pwn">Chaterine &#40;pwn&#41;</a><li><a href="#gate_keeping_rev">Gate Keeping &#40;rev&#41;</a><li><a href="#r_stands_alone_crypto">R Stands Alone &#40;crypto&#41;</a><li><a href="#import_random_crypto">Import Random &#40;crypto&#41;</a><li><a href="#quadrillion_matrices_crypto">Quadrillion Matrices &#40;crypto&#41;</a></ol></div> <h2 id=print_the_gifts_pwn ><a href="#print_the_gifts_pwn" class=header-anchor >Print the Gifts &#40;pwn&#41;</a></h2> <p>This challenge is a classic format string challenge, with NX, PIE, ASLR and full RELRO enabled.</p> <pre><code class=language-bash >❯ pwn checksec chall
 &#91;*&#93; &#39;/home/wednesday/code/ctf/ctf-archives/niteCTF/2024/print_the_gifts/chall&#39;
     Arch:       amd64-64-little
     RELRO:      Full RELRO
@@ -1034,17 +1034,17 @@ def solve&#40;&#41;:
         </div> 
     </div> 
     
-        <script src="/wednesday/libs/katex/katex.min.js"></script>
-<script src="/wednesday/libs/katex/contrib/auto-render.min.js"></script>
+        <script src="/libs/katex/katex.min.js"></script>
+<script src="/libs/katex/contrib/auto-render.min.js"></script>
 <script>renderMathInElement(document.body)</script>
 
     
     
-        <script src="/wednesday/libs/highlight/highlight.min.js"></script>
+        <script src="/libs/highlight/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script>
-<script src="/wednesday/libs/highlight/rust.min.js"></script>
-<script src="/wednesday/libs/highlight/csharp.min.js"></script>
+<script src="/libs/highlight/rust.min.js"></script>
+<script src="/libs/highlight/csharp.min.js"></script>
 <script>
   hljs.highlightAll();
   hljs.configure({ tabReplace: "    " });

@@ -1,4 +1,4 @@
-<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/katex/katex.min.css"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>HTB Cyber Apocalypse 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> <li><a href="/wednesday/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=htb_cyber_apocalypse_2024 ><a href="#htb_cyber_apocalypse_2024" class=header-anchor >HTB Cyber Apocalypse 2024</a></h1> <p>Thank you to the HackTheBox team for hosting this event. Below are writeups for all the cryptography challenges.</p> <div class=franklin-toc ><ol><li><a href="#dynastic">Dynastic</a><li><a href="#makeshift">Makeshift</a><li><a href="#primary_knowledge">Primary Knowledge</a><li><a href="#iced_tea">Iced TEA</a><li><a href="#blunt">Blunt</a><li><a href="#arranged">Arranged</a><li><a href="#partial_tenacity">Partial Tenacity</a><li><a href="#permuted">Permuted</a><li><a href="#tsayaki">Tsayaki</a><li><a href="#rot128">ROT128</a></ol></div> <h2 id=dynastic ><a href="#dynastic" class=header-anchor >Dynastic</a></h2> <p>We are given a string encrypted with a classical cipher.</p> <pre><code class=language-python >from secret import FLAG
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/libs/katex/katex.min.css"> <link rel=stylesheet  href="/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/css/franklin.css" /> <link rel=stylesheet  href="/css/tufte.css" /> <link rel=stylesheet  href="/css/latex.css" /> <link rel=stylesheet  href="/css/adjust.css" /> <link rel=icon  href="/assets/favicon.png" /> <title>HTB Cyber Apocalypse 2024</title> <div id=layout > <div id=menu > <ul> <li><a href="/">home</a> <li><a href="/about/">about</a> <li><a href="/ctf/">ctf</a> <li><a href="/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=htb_cyber_apocalypse_2024 ><a href="#htb_cyber_apocalypse_2024" class=header-anchor >HTB Cyber Apocalypse 2024</a></h1> <p>Thank you to the HackTheBox team for hosting this event. Below are writeups for all the cryptography challenges.</p> <div class=franklin-toc ><ol><li><a href="#dynastic">Dynastic</a><li><a href="#makeshift">Makeshift</a><li><a href="#primary_knowledge">Primary Knowledge</a><li><a href="#iced_tea">Iced TEA</a><li><a href="#blunt">Blunt</a><li><a href="#arranged">Arranged</a><li><a href="#partial_tenacity">Partial Tenacity</a><li><a href="#permuted">Permuted</a><li><a href="#tsayaki">Tsayaki</a><li><a href="#rot128">ROT128</a></ol></div> <h2 id=dynastic ><a href="#dynastic" class=header-anchor >Dynastic</a></h2> <p>We are given a string encrypted with a classical cipher.</p> <pre><code class=language-python >from secret import FLAG
 from random import randint
 
 def to_identity_map&#40;a&#41;:
@@ -705,7 +705,7 @@ print&#40;decrypted&#41;</code></pre>
 <h3 id=flag__8 ><a href="#flag__8" class=header-anchor >Flag</a></h3>
 <pre><code class=language-plaintext >HTB&#123;w3lL_n0T_aLl_gRoUpS_aRe_eQUaL_&#33;&#33;&#125;</code></pre>
 <h2 id=tsayaki ><a href="#tsayaki" class=header-anchor >Tsayaki</a></h2>
-<p>This challenge asks us to return to the TEA cipher from the <a href="/wednesday/ctf/htbroyale24/#iced_tea">Iced TEA</a> challenge above and to answer the following challenge: given a fixed plaintext \(P\), produce 4 keys such that the encryption of \(P\) under each of the keys results in the same ciphertext. To prove that we did not just get lucky, we must repeat the process across 10 rounds with different ciphertexts and key quadruplets.</p>
+<p>This challenge asks us to return to the TEA cipher from the <a href="/ctf/htbroyale24/#iced_tea">Iced TEA</a> challenge above and to answer the following challenge: given a fixed plaintext \(P\), produce 4 keys such that the encryption of \(P\) under each of the keys results in the same ciphertext. To prove that we did not just get lucky, we must repeat the process across 10 rounds with different ciphertexts and key quadruplets.</p>
 <pre><code class=language-python >from tea import Cipher as TEA
 from secret import IV, FLAG
 import os
@@ -1112,17 +1112,17 @@ end</code></pre>
         </div> 
     </div> 
     
-        <script src="/wednesday/libs/katex/katex.min.js"></script>
-<script src="/wednesday/libs/katex/contrib/auto-render.min.js"></script>
+        <script src="/libs/katex/katex.min.js"></script>
+<script src="/libs/katex/contrib/auto-render.min.js"></script>
 <script>renderMathInElement(document.body)</script>
 
     
     
-        <script src="/wednesday/libs/highlight/highlight.min.js"></script>
+        <script src="/libs/highlight/highlight.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script>
-<script src="/wednesday/libs/highlight/rust.min.js"></script>
-<script src="/wednesday/libs/highlight/csharp.min.js"></script>
+<script src="/libs/highlight/rust.min.js"></script>
+<script src="/libs/highlight/csharp.min.js"></script>
 <script>
   hljs.highlightAll();
   hljs.configure({ tabReplace: "    " });
