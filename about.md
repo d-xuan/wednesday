@@ -2,21 +2,15 @@
 
 # about
 
-
-
-Hi, I'm wednesday, a CTF player and occasional security researcher.
-
-- Currently I work as pentester at [Mantel](https://www.linkedin.com/in/darren-xuan-662911249/).
-
-- I am also a challenge author for [DownUnderCTF](https://downunderctf.com/) and [skateboarding dog](https://sk8boarding.dog/).
-
-- The best way to contact me is through Discord (username: `wednesda_y`).
+Writeups on security and CTFs (mainly cryptography).
 
 The image on the home page was
 made by Wikimedia user
 [Fastily](https://commons.wikimedia.org/wiki/File:Black_and_White_Cat_Sketch.svg)
 and reproduced here under the [CC-SA 4.0 license]( https://creativecommons.org/licenses/by-sa/4.0/
 ).
+
+This website was built using [Franklin.jl](https://franklinjl.org/) and the [Julia](https://julialang.org/) programming language.
 
 
 
