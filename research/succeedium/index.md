@@ -78,8 +78,6 @@ administrator.
 
 After a configuration change is made, the extension calls the `gsTeamOneConfigSave` method to persist the changes. In addition to the updated settings, the user's domain is also contained in the request. By intercepting and modifying this domain (for example, changing `attacker.com` to `victim.com`), an attacker is able to modify the domain-wide settings for users in other domains.
 
-During the penetration test, we were able to use our own Google Workspace accounts to make changes which persisted in the settings of our client's Google Workspace account. These changes were then confirmed using accounts within the client's Google Workspace.
-
 As an example, the following is a payload which configures the SSO gateway of the victim's configuration to point to a phishing link (`okta.attacker.com`). The request was made from the attacker's Google Workspace account. The `domainList` argument and the domain in the last positional argument have been changed from `attacker.com` to `victim.com`. This causes the changes to persist within the victim's TeamOne configuration.
 
 ```
@@ -173,4 +171,4 @@ Following a coordinated disclosure of this vulnerability to Succeedium, all thre
 -   2025-08-04: Vulnerabilities reported to Succeedium
 -   2025-08-04: Internal review and development team meeting by Succeedium
 -   2025-08-05: Release of patched TeamOne version (v4.22) to all customers
--   2025-08-07: Retesting completed and permission to disclose received
+-   2025-08-07: Retesting completed, permission to disclose and bounty received

@@ -3,9 +3,11 @@
 mildly interesting:
 
 - [CVE-2024-52510 - Confidentiality Break in Nextcloud Encryption](https://github.com/d-xuan/CVE-2024-52510)
-- [CVE-2025-5876{0-3} - Preauthentication RCE chain in Tautulli](/research/tautulli)
-- [A preauthentication RCE chain in Pydio Core](/research/pydio)
-- [A DB connection pool exhaustion technique for `rocket.rs`](/research/rocket)
+- [CVE-2025-5876{0-3} - Preauth RCE in Tautulli for Plex Media  Server](/research/tautulli)
+- [Preauthentication RCE in Pydio Core](/research/pydio)
+- [Soundness violations in popular zero knowledge proof libraries](/research/blum)
+- [A technique for connection pool DoS in the Rocket web framework](/research/rocket)
+
 
 not so interesting:
 

@@ -5,11 +5,10 @@ managing, sharing and synchronising files within a self-hosted environment. In
 addition to the core file sharing functionality, it provides plugins for
 alternative storage backends and authentication drivers.
 
-During an engagement at Mantel, I discovered a previously undocumented
-preauthentication RCE in Pydio Core 5.2.5. The application itself is quite old,
-so the impact here isn't particularly groundbreaking. The goal of this writeup
-is mainly to ensure the vulnerability can be found by search engines and
-other indexers.
+This article discloses a previously undocumented preauthentication RCE in Pydio
+Core 5.2.5. The application itself is quite old, so the impact here isn't
+particularly groundbreaking. The goal of this writeup is mainly to ensure the
+vulnerability can be found by search engines and other indexers.
 
 #### Preconditions and Fingerprinting
 
